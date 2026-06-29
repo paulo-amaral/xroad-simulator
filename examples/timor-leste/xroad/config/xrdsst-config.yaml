@@ -55,9 +55,8 @@ security_server:
     subsystem_code: HEALTH
     connection_type: HTTPS_NO_AUTH
   certificates:
-  - ./xroad/certs/ss-moh/sign-576D0BF94140569F24FAF7434A6C49073DFD83A9.crt
-  - ./xroad/certs/ss-moh/auth-2CCA81FC048025F19C115AFD9195EA9395ECB364.crt
-  - ./xroad/certs/ss-moh/auth-00F8F921C99F02FD143DCE57B28C8A808EEBADE3.crt
+  - ./xroad/certs/ss-moh/sign-445349EE81CFB8B8618F17801B621568E63A9FB1.crt
+  - ./xroad/certs/ss-moh/auth-C13E0396097CBF6E169B7E579FD9490E174D53BE.crt
 - name: ss-mtc
   url: https://127.0.0.1:3000/api/v1
   api_key_url: https://127.0.0.1:3000/api/v1/api-keys
