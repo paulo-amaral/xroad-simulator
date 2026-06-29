@@ -9,7 +9,7 @@ This sandbox simulates ministries joined to a single X-Road instance, exchanging
 | Transportes e Comunicacoes (DNTT) | `TL-TEST/GOV/MTC` | `DNTT` | provider of `driver-license` |
 | One-Stop-Shop (one-stop-shop) | `TL-TEST/GOV/OSS` | `PORTAL` | consumer on behalf of citizens |
 
-> ⚠️ **Test/dev only.** Every image, credential, PIN, and the Test CA here is for the sandbox and must never be used in production or against real citizen data.
+> **Test/dev only.** Every image, credential, PIN, and the Test CA here is for the sandbox and must never be used in production or against real citizen data.
 
 ---
 
@@ -141,7 +141,7 @@ xrdsst -c xroad/config/xrdsst-config.yaml apply            # certificates, subsy
 
 ---
 
-## 🛠 Journey 2: For Implementers (Developers & Agencies)
+## Journey 2: For Implementers (Developers & Agencies)
 
 Implementers are the developers building APIs (e.g., Ministry of Justice) or consuming APIs (e.g., One-Stop-Shop). They work with the X-Road ecosystem once it has been provisioned by the Administrator.
 
@@ -190,7 +190,7 @@ diagrams of the same flows are in `docs/diagram.md`.
 
 ---
 
-## 🩺 Troubleshooting
+## Troubleshooting
 
 Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 `docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_status'`).
@@ -206,14 +206,14 @@ Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 | `tools/scripts/generate-anchor.sh` says HTTP 401 / can't create API key | This CS image rejects `xrd:secret` on `/api/v1` | Download the anchor from the UI (Step 2.10) |
 | `/etc/xroad/globalconf` is empty | Generation has not succeeded yet | Fix generation first; the management service consumes it afterwards |
 
-## 🛑 Cleanup
+## Cleanup
 To shut down the sandbox and wipe all data:
 ```bash
 cd examples/timor-leste
 docker compose down -v
 ```
 
-## 📁 Layout
+## Layout
 
 ```text
 examples/timor-leste/
@@ -231,7 +231,7 @@ examples/timor-leste/
 └── docs/                     diagram.md (Mermaid)
 ```
 
-## 📚 Advanced Topics & Sources
+## Advanced Topics & Sources
 - **Orchestrator:** `python3 tools/sandboxctl.py up|status|identity|anchor|test|down`.
 - **Observability:** `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d` (Grafana `:3001`).
 - **Compliance (GovTL):** standards & gap matrix in [govtl-compliance.md](../../docs/govtl-compliance.md).

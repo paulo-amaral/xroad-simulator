@@ -49,25 +49,25 @@ formats for permanent storage; security-incident notification to CERT within 4h.
 
 ## Compliance matrix — this project
 
-Legend: ✓ met · ◐ partial / sandbox-only · ✗ gap (action needed).
+Legend: met · partial / sandbox-only · gap (action needed).
 
 | Norm | Status | Notes / action |
 |---|---|---|
-| mTLS between systems (RFC 8705) | ✓ | Provided by X-Road Security Servers. Dev tooling uses `-k`/skip-verify on localhost only (documented). |
-| X.509 PKI, OCSP (6960), TSA (3161) | ✓ | Native to X-Road. Sandbox uses the Test CA; replace with FIPS 140-3 HSM + approved CA in production. |
-| TLS 1.3 / ban TLS 1.0-1.1 (RFC 8446) | ◐ | X-Road enforces modern TLS. Local clients now pin a **TLS 1.2 floor**; production must require 1.3. |
-| OpenAPI 3.1 for services | ◐ | Added specs under `examples/timor-leste/api/`. Publish them as OpenAPI service descriptions (not plain REST). |
-| OIDC 1.0 / OAuth 2.1 (citizen SSO) | ◐ | Portal integrates the eID mock. Production must use **authorization_code + PKCE (RFC 7636)**, not client_credentials. |
-| JWT BCP (RFC 8725) | ✗→◐ | Portal now rejects `alg=none`; production must **verify the signature** against the IdP JWKS and allowlist algs. |
-| Algorithms: AES-256/SHA-3/RSA-4096/ECDSA P-384 | ◐ | Enforce in CA cert profiles and TLS cipher policy; ban MD5/SHA-1/RSA<2048. |
-| Accessibility WCAG 2.2 AA | ✗ | Portal is a demo; production portal must meet AA (contrast, keyboard, ARIA, lang). |
-| ISO 27001/27002, OWASP ASVS L2 | ◐ | Repo has secret hygiene, fail-closed, least-privilege ACLs, security headers on the portal. Full ISMS is organizational. |
-| Privacy by Design, ISO 27701/29100 | ✓ | Decentralized DBs (no data lake), least-privilege ACLs, minimal asserted claims, token isolation. |
-| UTF-8 / Unicode (Tetum, Portuguese) | ✓ | All services UTF-8. |
-| Syslog (RFC 5424) audit | ◐ | Observability overlay ships logs (Loki); add syslog/audit-log forwarding for the real audit trail. |
-| SBOM (procurement) | ✗ | Add an SBOM step (e.g. `syft`/`cyclonedx`) in CI before release. |
-| Open source / open standards (anti lock-in) | ✓ | X-Road, Docker, Postgres, nginx, Python stdlib; open formats throughout. |
-| DNSSEC, post-quantum planning | ✗ (emerging) | Out of sandbox scope; plan for the `.tl` zone and PQC (FIPS 203/204/205) roadmap. |
+| mTLS between systems (RFC 8705) | met | Provided by X-Road Security Servers. Dev tooling uses `-k`/skip-verify on localhost only (documented). |
+| X.509 PKI, OCSP (6960), TSA (3161) | met | Native to X-Road. Sandbox uses the Test CA; replace with FIPS 140-3 HSM + approved CA in production. |
+| TLS 1.3 / ban TLS 1.0-1.1 (RFC 8446) | partial | X-Road enforces modern TLS. Local clients now pin a **TLS 1.2 floor**; production must require 1.3. |
+| OpenAPI 3.1 for services | partial | Added specs under `examples/timor-leste/api/`. Publish them as OpenAPI service descriptions (not plain REST). |
+| OIDC 1.0 / OAuth 2.1 (citizen SSO) | partial | Portal integrates the eID mock. Production must use **authorization_code + PKCE (RFC 7636)**, not client_credentials. |
+| JWT BCP (RFC 8725) | gap -> partial | Portal now rejects `alg=none`; production must **verify the signature** against the IdP JWKS and allowlist algs. |
+| Algorithms: AES-256/SHA-3/RSA-4096/ECDSA P-384 | partial | Enforce in CA cert profiles and TLS cipher policy; ban MD5/SHA-1/RSA<2048. |
+| Accessibility WCAG 2.2 AA | gap | Portal is a demo; production portal must meet AA (contrast, keyboard, ARIA, lang). |
+| ISO 27001/27002, OWASP ASVS L2 | partial | Repo has secret hygiene, fail-closed, least-privilege ACLs, security headers on the portal. Full ISMS is organizational. |
+| Privacy by Design, ISO 27701/29100 | met | Decentralized DBs (no data lake), least-privilege ACLs, minimal asserted claims, token isolation. |
+| UTF-8 / Unicode (Tetum, Portuguese) | met | All services UTF-8. |
+| Syslog (RFC 5424) audit | partial | Observability overlay ships logs (Loki); add syslog/audit-log forwarding for the real audit trail. |
+| SBOM (procurement) | gap | Add an SBOM step (e.g. `syft`/`cyclonedx`) in CI before release. |
+| Open source / open standards (anti lock-in) | met | X-Road, Docker, Postgres, nginx, Python stdlib; open formats throughout. |
+| DNSSEC, post-quantum planning | gap (emerging) | Out of sandbox scope; plan for the `.tl` zone and PQC (FIPS 203/204/205) roadmap. |
 
 ## Recommended next actions (priority order)
 

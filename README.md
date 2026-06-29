@@ -1,4 +1,4 @@
-# project-15-xroad
+# X-Road Simulator
 
 A development sandbox and reference for building on the **X-Road data exchange layer**: a complete X-Road
 ecosystem (Central Server, test CA, Security Servers) running on Docker Compose / Kubernetes, plus consumer
@@ -13,11 +13,12 @@ development, zero-trust controls, and the official X-Road stack.
 ## Project structure
 
 ```text
-project-15-xroad/
+xroad-simulator/
 ├── README.md                     This file
 ├── SECURITY.md                   What never to commit; pre-push checks
 ├── .gitignore / .env.example     Secret hygiene (keys, certs, anchors, state)
-├── .pre-commit-config.yaml       Secret scanning (gitleaks) and hygiene hooks
+├── .githooks/                    Local commit safety hook
+├── scripts/                      Repository checks
 ├── .github/workflows/ci.yml      Validate, secret scan, SBOM + CVE gate
 │
 ├── docs/                         X-ROAD GENERAL reference + GovTL standards (not project-specific)

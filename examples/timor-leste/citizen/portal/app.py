@@ -50,10 +50,10 @@ SECURITY_HEADERS = {
 }
 
 SERVICES = [
-    {"title": "Birth Certificate", "icon": "📄",
+    {"title": "Birth Certificate", "abbr": "BC",
      "service": "TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1", "resource": "certificates/TL-67890",
      "mock": "http://mj-mock:8080"},
-    {"title": "Driver License", "icon": "🚗",
+    {"title": "Driver License", "abbr": "DL",
      "service": "TL-TEST/GOV/MTC/DNTT/driver-license/v1", "resource": "licenses/TL-12345",
      "mock": "http://dntt-mock:8080"},
 ]
@@ -116,18 +116,19 @@ def call_service(svc):
 
 # ── Rendering ─────────────────────────────────────────────────────────────────
 CSS = """
-*{box-sizing:border-box} body{margin:0;font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;background:#f4f6fb;color:#1f2a3a}
-header{padding:18px 24px;border-bottom:1px solid #d7dee8;background:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
-header h1{margin:0;font-size:22px} .muted{color:#5b6b82;font-size:13px}
-.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;border:1px solid #d7dee8;font-weight:600}
-.ok{color:#15803d;border-color:#bbf7d0} .bad{color:#dc2626;border-color:#fecaca}
-a.btn{display:inline-block;padding:9px 16px;border-radius:8px;background:#2563eb;color:#fff;text-decoration:none;font-weight:600}
-a.btn:hover{filter:brightness(1.05)}
-main{max-width:920px;margin:0 auto;padding:22px}
-.card{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:16px 18px;margin:14px 0;box-shadow:0 1px 3px rgba(16,24,40,.05)}
-.card h2{margin:0 0 6px;font-size:17px} .req{font:12.5px ui-monospace,Menlo,monospace;color:#5b6b82;word-break:break-all}
-pre{background:#f8fafc;border:1px solid #d7dee8;border-radius:8px;padding:10px;overflow:auto;font-size:12px;color:#334155}
-.kv{color:#2563eb} .tag{font-size:12px;color:#5b6b82}
+:root{--primary:#6d3ff5;--blue-60:#4f27d8;--ink:#2f2547;--ink-muted:#62577a;--ink-subtle:#9b92b3;--canvas:#fff;--surface-1:#f2edff;--surface-2:#e5def7;--hairline:#ded6f2;--success:#24a148;--error:#da1e28;--sans:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;--mono:'IBM Plex Mono',Menlo,Consolas,monospace}
+*{box-sizing:border-box} body{margin:0;font:15px/1.5 var(--sans);letter-spacing:.16px;background:var(--canvas);color:var(--ink)}
+header{padding:16px 24px;border-bottom:1px solid var(--hairline);background:var(--canvas);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px}
+header h1{margin:0;font-size:28px;font-weight:300;line-height:1.25;letter-spacing:0}.muted{color:var(--ink-muted);font-size:13px}
+.badge{display:inline-block;padding:3px 9px;font-size:12px;border:1px solid var(--hairline);font-weight:600;background:var(--canvas)}
+.ok{color:var(--success);border-color:#b7e8c4}.bad{color:var(--error);border-color:#f2b8b5}
+a.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--primary);color:#fff;text-decoration:none;font-weight:600;border:1px solid var(--primary)}
+a.btn:hover{background:var(--blue-60);border-color:var(--blue-60)}
+main{max-width:960px;margin:0 auto;padding:24px}
+.card{background:var(--canvas);border:1px solid var(--hairline);padding:16px 18px;margin:14px 0}
+.card h2{margin:0 0 6px;font-size:18px;font-weight:600}.req{font:12.5px var(--mono);color:var(--ink-muted);word-break:break-all}
+pre{background:var(--surface-1);border:1px solid var(--hairline);padding:10px;overflow:auto;font:12px var(--mono);color:var(--ink)}
+.kv{color:var(--primary)}.tag{font-size:12px;color:var(--ink-muted)}.svcmark{display:inline-grid;place-items:center;width:28px;height:28px;background:var(--surface-1);border:1px solid var(--hairline);color:var(--primary);font:12px var(--mono);font-weight:600}
 """
 
 
@@ -141,7 +142,7 @@ def page(body_html, citizen_html):
 
 
 def render_card(svc, res):
-    head = f'<h2>{svc["icon"]} {html.escape(svc["title"])}</h2>'
+    head = f'<h2><span class="svcmark">{html.escape(svc["abbr"])}</span> {html.escape(svc["title"])}</h2>'
     req = f'<div class="req">GET {html.escape(res["path"])}<br>X-Road-Client: {html.escape(XROAD_CLIENT)}</div>'
     if res["ok"]:
         meta = (f'<div class="tag">via <span class="kv">{html.escape(res["via"])}</span> · '
@@ -153,7 +154,7 @@ def render_card(svc, res):
 def service_menu():
     items = "".join(
         f'<a class="btn" style="margin:0 10px 8px 0" href="/request?svc={i}">'
-        f'{html.escape(s["icon"])} {html.escape(s["title"])}</a>'
+        f'<span class="svcmark">{html.escape(s["abbr"])}</span>{html.escape(s["title"])}</a>'
         for i, s in enumerate(SERVICES))
     return ('<div class="card"><h2>Choose a service to request</h2>'
             '<p class="muted">Pick a service. The One-Stop-Shop requests it on your behalf through its '

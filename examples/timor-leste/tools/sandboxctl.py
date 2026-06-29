@@ -60,10 +60,10 @@ def check(name, url, want=""):
     try:
         status, body = http_get(url)
     except Exception as e:
-        print(f"  \033[1;31m✗\033[0m {name:22} {e}")
+        print(f"  \033[1;31m[FAIL]\033[0m {name:22} {e}")
         return False
     if status != 200 or (want and want not in body):
-        print(f"  \033[1;31m✗\033[0m {name:22} status {status}")
+        print(f"  \033[1;31m[FAIL]\033[0m {name:22} status {status}")
         return False
     extra = ""
     if want == "issuer":
@@ -71,7 +71,7 @@ def check(name, url, want=""):
             extra = json.loads(body).get("issuer", "")
         except Exception:
             pass
-    print(f"  \033[1;32m✓\033[0m {name:22} {extra}")
+    print(f"  \033[1;32m[OK]\033[0m {name:22} {extra}")
     return True
 
 

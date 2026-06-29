@@ -90,7 +90,7 @@ UnknownMember (no mgmt host)
   → AccessDenied (missing service ACL)
   → OutdatedGlobalConf (stale global conf, transient)
   → no valid auth certificate / TLS handshake (stale OCSP)
-  → HTTP 200 + X-Road-Request-Id  ✓
+  -> HTTP 200 + X-Road-Request-Id OK
 ```
 
 ## 5. Turn on the portal
