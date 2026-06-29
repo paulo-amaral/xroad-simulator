@@ -178,7 +178,10 @@ def cmd_logs(args):
 
 
 def cmd_down(args):
-    compose("down", *([] if args.keep_data else ["-v"]))
+    if args.wipe:
+        compose("down", "-v")
+    else:
+        compose("stop")
 
 
 def main():
@@ -193,8 +196,8 @@ def main():
     lg.add_argument("service", nargs="?", default="cs")
     lg.add_argument("--grep", default="global ?conf|signing|active key|error|fail")
     lg.set_defaults(func=cmd_logs)
-    d = sub.add_parser("down", help="stop the sandbox")
-    d.add_argument("--keep-data", action="store_true", help="preserve volumes")
+    d = sub.add_parser("down", help="stop the sandbox without deleting persistent state")
+    d.add_argument("--wipe", action="store_true", help="remove containers and volumes")
     d.set_defaults(func=cmd_down)
     args = p.parse_args()
     args.func(args)

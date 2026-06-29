@@ -116,6 +116,6 @@ set -a; source .env; set +a
 tools/scripts/provision-mgmt.sh
 
 log "8. Running Declarative E2E Tests via Hurl..."
-docker compose --profile test run --rm hurl --insecure --test /tools/e2e.hurl
+tools/e2e-test.sh
 
 log "✅ Initialization complete! The One-Stop-Shop portal is ready at http://localhost:8000"

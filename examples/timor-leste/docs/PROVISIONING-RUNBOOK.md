@@ -5,8 +5,8 @@ Hard-won, end-to-end sequence to take the sandbox from "Security Servers registe
 headers). Every step here is reproducible through the REST APIs; no UI clicks, no direct DB
 writes. Test/dev only.
 
-Verify the result at any time with `python3 tools/showcase.py` (live demo for officials) or
-`tools/e2e-test.sh` (pass/fail).
+Verify the result at any time with `tools/e2e-test.sh` (Hurl pass/fail) or
+`python3 tools/showcase.py` (live demo for officials).
 
 ## Official bootstrap shape
 

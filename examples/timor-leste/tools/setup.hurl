@@ -1,9 +1,10 @@
 # Declarative Central Server provisioning for the Timor-Leste sandbox, in the xrd-dev-stack style.
-# Run inside the Hurl container (reaches the CS at https://cs:4000 on the xroad network):
-#   docker compose --profile test run --rm hurl --insecure --retry 30 --retry-interval 6000 \
-#     --variables-file /tools/setup.vars /tools/setup.hurl
-# Hurl's --retry re-runs each failing request until its asserts pass, which replaces the shell
-# readiness/retry loops. The CA/TSA cert files are extracted to tools/ (single extension!) by init.sh.
+# Run inside the Hurl container, following the upstream xrd-dev-stack shape:
+#   docker compose --profile test run --rm hurl --insecure \
+#     --variables-file /tools/setup.vars --file-root /tools /tools/setup.hurl \
+#     --very-verbose --retry 12 --retry-interval 10000
+# The cert files are expected under /tools through --file-root, like upstream mounts ca-volume as
+# /hurl-files and passes --file-root /hurl-files.
 # Test/dev only.
 
 # ── Session login + management API key (this CS rejects basic auth on /api/v1) ──
@@ -167,7 +168,7 @@ url: http://testca:8899
 HTTP *
 
 # ── Wait for the first successful global-configuration generation ──────────────
-GET https://cs:4000/api/v1/configuration-sources/INTERNAL/anchor
+GET https://cs:4000/api/v1/configuration-sources/INTERNAL/anchor/download
 Authorization: X-Road-ApiKey token={{apikey}}
 [Options]
 retry: 60

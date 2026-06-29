@@ -53,7 +53,7 @@ except Exception:
   if [ -z "${CS_API_KEY}" ]; then
     warn "API key creation failed (is the Central Server up and initialized?)"
     instructions
-    exit 0
+    exit 1
   fi
   log "API key created"
 fi
@@ -67,5 +67,5 @@ else
   rm -f "${OUT}"
   warn "download failed or response was not an anchor (is the Central Server initialized?)"
   instructions
-  exit 0
+  exit 1
 fi

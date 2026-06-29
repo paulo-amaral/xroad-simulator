@@ -23,12 +23,14 @@ The entire ecosystem (starting containers, configuring the Central Server, addin
 
 ```bash
 cd examples/timor-leste
-sh init.sh
+./init.sh
 ```
 
 This follows the official X-Road `xrd-dev-stack` shape: bootstrap the Central Server and trust first, initialize Security Servers, create CSRs, sign/import/register authentication certificates, approve management requests, then publish clients/services/ACLs. It uses supported REST APIs, `xrdsst`, and Hurl. It does not write directly to X-Road databases.
 
 Important: do not use a full `xrdsst -c xroad/config/xrdsst-config.yaml apply` as the main bootstrap path in this sandbox. It can try client/subsystem certificate work before the Security Servers and management services have reached the required global-configuration state. `init.sh` runs the safer staged sequence instead.
+
+The API verification is Hurl-based, matching the upstream `xrd-dev-stack` approach: `tools/e2e.hurl` is the canonical E2E test and `tools/e2e-test.sh` runs it in the Hurl container with `--file-root`, `--retry`, and `--retry-interval`.
 
 UIs Available:
 - **Central Server:** `https://localhost:4000` (login `xrd` / `secret`)
@@ -137,7 +139,7 @@ examples/timor-leste/
 │   ├── portal/               One-Stop-Shop app (OIDC PKCE + JWKS) + Dockerfile
 │   └── simulator/            simulator.html (interactive flow)
 ├── observability/            Grafana + Prometheus + Loki overlay
-├── tools/                    setup.hurl · e2e.hurl · sandboxctl.py · showcase.py
+├── tools/                    setup.hurl · e2e.hurl · e2e-test.sh · sandboxctl.py · showcase.py
 │   └── scripts/              install · provision-cs · provision-ss · provision-mgmt · anchor · sign · sbom
 └── docs/                     diagram.md · PROVISIONING-RUNBOOK.md
 ```
