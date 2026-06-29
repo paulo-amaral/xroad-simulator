@@ -11,12 +11,22 @@ log() { printf '\n\033[1;32m[setup]\033[0m %s\n' "$*"; }
 log "1. Checking prerequisites and starting Docker ecosystem..."
 tools/scripts/install.sh
 
-log "2. Creating API Key for Central Server provisioning..."
+log "2. Creating API Key for Central Server provisioning (session login)..."
+# This Central Server image rejects HTTP basic auth on /api/v1, so authenticate the same way the
+# admin UI does: GET / for the XSRF-TOKEN cookie, POST /login, then create the key on that session.
 CS_URL="https://localhost:4000"
-CS_API_KEY=$(curl -ksS -u "xrd:secret" -H "Content-Type: application/json" \
+J="$(mktemp)"
+curl -ksS -c "$J" -o /dev/null "${CS_URL}/"
+XSRF=$(awk '$6=="XSRF-TOKEN"{print $7}' "$J")
+curl -ksS -b "$J" -c "$J" -H "X-XSRF-TOKEN: ${XSRF}" -o /dev/null \
+    --data-urlencode "username=xrd" --data-urlencode "password=secret" "${CS_URL}/login"
+XSRF=$(awk '$6=="XSRF-TOKEN"{print $7}' "$J")
+CS_API_KEY=$(curl -ksS -b "$J" -H "X-XSRF-TOKEN: ${XSRF}" -H "Content-Type: application/json" \
     -X POST "${CS_URL}/api/v1/api-keys" \
     -d '["XROAD_SYSTEM_ADMINISTRATOR","XROAD_SECURITY_OFFICER","XROAD_REGISTRATION_OFFICER","XROAD_MANAGEMENT_SERVICE"]' | \
     python3 -c 'import json,sys; print(json.load(sys.stdin).get("key", ""))')
+rm -f "$J"
+[ -n "$CS_API_KEY" ] || { echo "Failed to create CS API key"; exit 1; }
 export CS_API_KEY
 
 log "3. Provisioning Central Server (Instance, Tokens, Members)..."
@@ -24,26 +34,34 @@ tools/scripts/provision-cs.sh
 
 log "4. Provisioning Trust Services (Test CA & TSA)..."
 AUTH="Authorization: X-Road-ApiKey token=$CS_API_KEY"
+# The CS healthcheck passes when the UI responds, but the admin backend may not yet accept
+# trust-service operations (emulated amd64 boot is slow). Wait until the CA endpoint answers 200.
+until [ "$(curl -ksS -o /dev/null -w '%{http_code}' -H "$AUTH" "${CS_URL}/api/v1/certification-services")" = "200" ]; do sleep 3; done
 docker compose exec -T testca cat /home/ca/CA/certs/ca.cert.pem > tools/ca.cert.pem
 docker compose exec -T testca cat /home/ca/CA/certs/tsa.cert.pem > tools/tsa.cert.pem
 
-# Idempotently add CA (ignore 409 Conflict if already exists)
+# Add the CA as a certification service on the Central Server (CS path is /certification-services,
+# not /certificate-authorities which is the Security Server path). The profile is the FI *Provider*
+# class to match the xrdsst FI profile. Ignore 409 if it already exists.
 HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
-    -F "certificate=@tools/ca.cert.pem" \
-    -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.EjbcaCertificateProfileInfo" \
-    -X POST "${CS_URL}/api/v1/certificate-authorities")
+    -F "certificate=@tools/ca.cert.pem;type=application/octet-stream" \
+    -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.FiVRKCertificateProfileInfoProvider" \
+    -F "tls_auth=false" \
+    -X POST "${CS_URL}/api/v1/certification-services")
 if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "409" ]; then
     echo "  Test CA configured (HTTP $HTTP_CODE)"
 else
     echo "  Warning: Test CA configuration returned HTTP $HTTP_CODE"
 fi
 
-# We need the CA ID to add the OCSP responder. Let's find it.
-CA_ID=$(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/certificate-authorities" | python3 -c 'import json,sys; res=json.load(sys.stdin); print(res[0]["id"] if res else "")')
+# Find the CA id and add the OCSP responder (multipart, not JSON).
+CA_ID=$(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/certification-services" | python3 -c 'import json,sys
+d=json.load(sys.stdin)
+print(d[0]["id"] if isinstance(d,list) and d else "")')
 if [ -n "$CA_ID" ]; then
-    HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" -H "Content-Type: application/json" \
-        -d '{"url":"http://testca:8888"}' \
-        -X POST "${CS_URL}/api/v1/certificate-authorities/${CA_ID}/ocsp-responders")
+    HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
+        -F "url=http://testca:8888" \
+        -X POST "${CS_URL}/api/v1/certification-services/${CA_ID}/ocsp-responders")
     echo "  OCSP Responder configured (HTTP $HTTP_CODE)"
 fi
 
@@ -69,6 +87,11 @@ log "6. Downloading Configuration Anchor..."
 tools/scripts/generate-anchor.sh
 
 log "7. Provisioning Security Servers via xrdsst (Declarative Configuration)..."
+log "  waiting for the Security Server admin APIs (emulated boot is slow)..."
+for ss in ss-mj ss-moh ss-mtc ss-oss; do
+  until docker compose exec -T "$ss" sh -lc 'curl -ksSf -o /dev/null https://localhost:4000/' 2>/dev/null; do sleep 5; done
+  echo "  $ss ready"
+done
 if [ ! -f .env ]; then
   cp ../../.env.example .env
 fi
@@ -76,6 +99,10 @@ source .venv/bin/activate
 tools/scripts/generate-ss-api-keys.sh
 set -a; source .env; set +a
 xrdsst -c xroad/config/xrdsst-config.yaml apply
+
+log "7b. Management Security Server, routable addresses, registrations and ACLs (REST API)..."
+set -a; source .env; set +a
+tools/scripts/provision-mgmt.sh
 
 log "8. Running Declarative E2E Tests via Hurl..."
 docker compose --profile test run --rm hurl --insecure --test /tools/e2e.hurl

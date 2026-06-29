@@ -3,6 +3,7 @@
 A development sandbox and reference for building on the **X-Road data exchange layer**: a complete X-Road
 ecosystem (Central Server, test CA, Security Servers) running on Docker Compose / Kubernetes, plus consumer
 and provider services built test-first against it.
+![alt text](image.png)
 
 Development follows the guides in [docs/](docs/README.md): a mandatory pre-flight gate, test-driven
 development, zero-trust controls, and the official X-Road stack.
@@ -81,7 +82,7 @@ information system connects through its own SS. The official installation guide 
 So there is still one conceptual **Central Server** for the instance, plus many **Security Servers**. Some
 Security Servers carry extra operator roles. In this sandbox, `ss-mtc` plays the management-provider role
 (`DNTT + MANAGEMENT`) while `cs` remains the Central Server. See the official Security Server installation
-guide: https://docs.x-road.global/Manuals/ig-ss_x-road_v6_security_server_installation_guide.html.
+guide: <https://docs.x-road.global/Manuals/ig-ss_x-road_v6_security_server_installation_guide.html>.
 
 ## Official stack
 
@@ -110,10 +111,12 @@ provider mock). Full topology, ports, and the provisioning sequence are in the
    ACL, and test.
 
 2. **Start the ecosystem.**
+
    ```bash
    cd examples/timor-leste
    tools/scripts/install.sh
    ```
+
    Default UI ports: Central Server `4000`, test CA `8888`, Security Servers `1000` (ss-mj) / `2000`
    (ss-moh) / `3000` (ss-mtc) / `5000` (ss-oss).
 
@@ -122,6 +125,7 @@ provider mock). Full topology, ports, and the provisioning sequence are in the
    `xroad/anchors/TL-TEST-anchor.xml` before `xrdsst` can provision them.
 
 4. **Provision declaratively.** Keep secrets in environment variables, then apply:
+
    ```bash
    cp ../../.env.example .env
    set -a; source .env; set +a
@@ -130,6 +134,7 @@ provider mock). Full topology, ports, and the provisioning sequence are in the
    set -a; source .env; set +a
    xrdsst -c xroad/config/xrdsst-config.yaml apply
    ```
+
    This runs the full sequence (anchor, token login, key generation, certificate import/register/activate,
    timestamping, client and service registration, access grants). The ordered per-step commands are listed in
    [sandbox.md](docs/sandbox.md) for debugging.
@@ -188,11 +193,11 @@ cd examples/timor-leste && docker compose up -d
 
 ## Official documentation
 
-- X-Road documentation portal: https://docs.x-road.global
-- X-Road core repository (NIIS): https://github.com/nordic-institute/X-Road
-- Architecture documents: https://github.com/nordic-institute/X-Road/tree/develop/doc/Architecture
-- Security architecture: https://github.com/nordic-institute/X-Road/blob/develop/doc/Architecture/arc-sec_x_road_security_architecture.md
-- Security Server Toolkit (`xrdsst`): https://github.com/nordic-institute/X-Road-Security-Server-toolkit
-- Tech radar: https://nordic-institute.github.io/X-Road-tech-radar/
-- Knowledge base: https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/overview
-- Local test environment (Docker Compose): https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/
+- X-Road documentation portal: <https://docs.x-road.global>
+- X-Road core repository (NIIS): <https://github.com/nordic-institute/X-Road>
+- Architecture documents: <https://github.com/nordic-institute/X-Road/tree/develop/doc/Architecture>
+- Security architecture: <https://github.com/nordic-institute/X-Road/blob/develop/doc/Architecture/arc-sec_x_road_security_architecture.md>
+- Security Server Toolkit (`xrdsst`): <https://github.com/nordic-institute/X-Road-Security-Server-toolkit>
+- Tech radar: <https://nordic-institute.github.io/X-Road-tech-radar/>
+- Knowledge base: <https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/overview>
+- Local test environment (Docker Compose): <https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/>
