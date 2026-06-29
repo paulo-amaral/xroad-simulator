@@ -13,7 +13,7 @@ This sandbox simulates ministries joined to a single X-Road instance, exchanging
 
 ---
 
-## 👩‍💻 Journey 1: For Administrators (Network Operators)
+## Journey 1: For Administrators (Network Operators)
 
 Administrators (e.g., TIC Timor) are responsible for bringing up the infrastructure, configuring the Central Server, and setting up the Security Servers for the agencies.
 
