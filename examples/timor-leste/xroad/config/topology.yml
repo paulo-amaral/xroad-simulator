@@ -19,6 +19,7 @@ members:
     database: mj-db          # civil registry (birth, marriage, death records)
     subsystems:
       - code: JUSTICE        # provider of civil-registry services; also consumes driver-license
+        name: Civil Registry Services
         role: provider+consumer
         services:
           - code: birth-certificate   # birth certificate (civil registry)
@@ -31,6 +32,7 @@ members:
     security_server: ss-moh
     subsystems:
       - code: HEALTH         # consumer of driver-license
+        name: National Health Services
         role: consumer
 
   - name: Ministry of Transport and Communications (DNTT)
@@ -39,6 +41,7 @@ members:
     database: dntt-db        # each ministry owns its database (no central data lake)
     subsystems:
       - code: DNTT           # provider of the driver-license service
+        name: Land Transport and Driver Licensing Services
         role: provider
         services:
           - code: driver-license
@@ -51,6 +54,7 @@ members:
     security_server: ss-oss
     subsystems:
       - code: PORTAL         # citizen-facing portal; consumer on behalf of citizens
+        name: One-Stop-Shop Citizen Services Portal
         role: consumer
         citizen_auth: e-KYC + eID (OIDC)   # citizen identity is handled here, NOT by X-Road
         # Sandbox identity mocks (outside X-Road): eid-mock (OIDC) + ekyc-mock (verify).

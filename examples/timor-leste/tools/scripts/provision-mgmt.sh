@@ -4,7 +4,16 @@
 # the service ACLs. Idempotent — safe to re-run. Requires CS_API_KEY and SS_*_API_KEY in the env,
 # the anchor downloaded, and xrdsst to have initialised the Security Servers (keys + auth certs).
 # Full rationale: docs/PROVISIONING-RUNBOOK.md. Test/dev only.
-set -uo pipefail
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+if [ -f "${SANDBOX_DIR}/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${SANDBOX_DIR}/.env"
+  set +a
+fi
 
 CS=https://localhost:4000
 MGMT_SS=ss-mtc            # operator (MTC / TIC Timor) hosts GOV/01/MANAGEMENT
@@ -12,14 +21,80 @@ MGMT_PORT=3000
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 log(){ printf '\033[1;34m[mgmt]\033[0m %s\n' "$*"; }
 
+for var in SS_MTC_API_KEY SS_MJ_API_KEY SS_MOH_API_KEY SS_OSS_API_KEY; do
+  [ -n "${!var:-}" ] || { echo "[mgmt] missing ${var}; run tools/scripts/generate-ss-api-keys.sh and keep CS_API_KEY in .env" >&2; exit 2; }
+done
+
 cs(){  curl -sk -m 20 -H "Authorization: X-Road-ApiKey token=${CS_API_KEY}" "$@"; }
 ss(){ local p=$1; shift; curl -sk -m 30 -H "Authorization: X-Road-ApiKey token=$1" "https://127.0.0.1:${p}/api/v1$2" "${@:3}"; }
 code(){ curl -sk -m 30 -o /dev/null -w '%{http_code}' "$@"; }
+
+create_cs_api_key(){
+  local jar user pass xsrf resp
+  user="${XROAD_ADMIN_USER:-xrd}"
+  pass="${XROAD_ADMIN_PASSWORD:-secret}"
+  jar="$(mktemp)"
+  curl -ksS -c "$jar" -o /dev/null "${CS}/" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "$jar" | tail -1)"
+  curl -ksS -b "$jar" -c "$jar" -H "X-XSRF-TOKEN: ${xsrf}" -o /dev/null \
+    --data-urlencode "username=${user}" --data-urlencode "password=${pass}" "${CS}/login" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "$jar" | tail -1)"
+  resp="$(curl -ksS -b "$jar" -H "X-XSRF-TOKEN: ${xsrf}" -H "Content-Type: application/json" \
+    -X POST "${CS}/api/v1/api-keys" \
+    -d '["XROAD_SYSTEM_ADMINISTRATOR","XROAD_SECURITY_OFFICER","XROAD_REGISTRATION_OFFICER","XROAD_MANAGEMENT_SERVICE"]' || true)"
+  rm -f "$jar"
+  printf '%s' "$resp" | python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("key",""))
+except Exception:
+    print("")'
+}
+
+ensure_cs_api_key(){
+  local c
+  c="$(code -H "Authorization: X-Road-ApiKey token=${CS_API_KEY:-}" "${CS}/api/v1/system/version")"
+  [ "$c" = "200" ] && return
+  log "creating a fresh Central Server API key"
+  CS_API_KEY="$(create_cs_api_key)"
+  [ -n "$CS_API_KEY" ] || { echo "[mgmt] could not create CS_API_KEY; check Central Server login" >&2; exit 2; }
+  export CS_API_KEY
+  if [ -f "${SANDBOX_DIR}/.env" ]; then
+    python3 - "${SANDBOX_DIR}/.env" "$CS_API_KEY" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+key = sys.argv[2]
+lines = path.read_text().splitlines()
+for i, line in enumerate(lines):
+    if line.startswith("CS_API_KEY="):
+        lines[i] = f"CS_API_KEY={key}"
+        break
+else:
+    lines.append(f"CS_API_KEY={key}")
+path.write_text("\n".join(lines) + "\n")
+PY
+  fi
+}
+
+ensure_cs_api_key
 
 approve_waiting(){
   for id in $(cs "${CS}/api/v1/management-requests?status=WAITING" | python3 -c "import sys,json;[print(r['id']) for r in json.load(sys.stdin).get('items',[])]" 2>/dev/null); do
     cs -o /dev/null -w "  approve #$id -> %{http_code}\n" -X POST "${CS}/api/v1/management-requests/${id}/approval"
   done
+}
+
+ensure_rest_service(){
+  local port=$1 key=$2 client=$3 code=$4 url=$5
+  if ss "$port" "$key" "/clients/${client}/service-descriptions" | grep -q "\"${code}\""; then
+    echo "  ${code} service -> exists"
+    return
+  fi
+  local sd
+  sd=$(ss "$port" "$key" "/clients/${client}/service-descriptions" -H "Content-Type: application/json" -X POST \
+    -d "{\"url\":\"${url}\",\"type\":\"REST\",\"rest_service_code\":\"${code}\",\"ignore_warnings\":true}" |
+    python3 -c "import sys,json;print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+  [ -n "$sd" ] && ss "$port" "$key" "/service-descriptions/${sd}/enable" -o /dev/null -w "  ${code} enable -> %{http_code}\n" -X PUT
 }
 
 # ── 1. approve the auth-cert registration requests xrdsst submitted ───────────
@@ -76,17 +151,24 @@ log "waiting for the new addresses to propagate (~60s)"; sleep 60
 
 # ── 4. register the provider/consumer subsystems + approve ────────────────────
 log "registering subsystems (retry until the global conf carries the management provider)"
-for pair in "3000:SS_MTC_API_KEY:TL-TEST:GOV:MTC:DNTT" "1000:SS_MJ_API_KEY:TL-TEST:GOV:MJ:JUSTICE" "5000:SS_OSS_API_KEY:TL-TEST:GOV:OSS:PORTAL"; do
+for pair in "3000:SS_MTC_API_KEY:TL-TEST:GOV:MTC:DNTT" "1000:SS_MJ_API_KEY:TL-TEST:GOV:MJ:JUSTICE" "2000:SS_MOH_API_KEY:TL-TEST:GOV:MOH:HEALTH" "5000:SS_OSS_API_KEY:TL-TEST:GOV:OSS:PORTAL"; do
   p=${pair%%:*}; rest=${pair#*:}; kn=${rest%%:*}; cid=${rest#*:}; key=$(eval echo \$$kn)
   for i in $(seq 1 8); do
     c=$(code -H "Authorization: X-Road-ApiKey token=${key}" -X PUT "https://127.0.0.1:${p}/api/v1/clients/${cid}/register")
-    [ "$c" = "204" ] && { echo "  ${cid} -> registered"; break; } || { echo "  ${cid} -> ${c} (retry $i)"; sleep 20; }
+    case "$c" in
+      204|409) echo "  ${cid} -> registered/already registered ($c)"; break ;;
+      *) echo "  ${cid} -> ${c} (retry $i)"; sleep 20 ;;
+    esac
   done
 done
 approve_waiting
 log "waiting for the registrations to propagate (~60s)"; sleep 60
 
 # ── 5. service access rights for the One-Stop-Shop consumer ───────────────────
+log "publishing mock provider APIs"
+ensure_rest_service 1000 "$SS_MJ_API_KEY"  "TL-TEST:GOV:MJ:JUSTICE"  "birth-certificate" "http://mj-mock:8080"
+ensure_rest_service 3000 "$SS_MTC_API_KEY" "TL-TEST:GOV:MTC:DNTT"    "driver-license"     "http://dntt-mock:8080"
+
 log "granting OSS/PORTAL access to the published services"
 ss 1000 "$SS_MJ_API_KEY"  "/clients/TL-TEST:GOV:MJ:JUSTICE/service-clients/TL-TEST:GOV:OSS:PORTAL/access-rights" -o /dev/null -w "  birth-certificate -> %{http_code}\n" \
   -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"birth-certificate"}]}'

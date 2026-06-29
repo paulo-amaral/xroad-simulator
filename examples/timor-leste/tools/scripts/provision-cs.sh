@@ -23,8 +23,14 @@ MEMBERS=(
   "MTC:Ministry of Transport and Communications"
   "OSS:Balkaun Uniku"
 )
-# member code : subsystem code
-SUBSYSTEMS=( "01:MANAGEMENT" "MJ:JUSTICE" "MOH:HEALTH" "MTC:DNTT" "OSS:PORTAL" )
+# member code | subsystem code | professional display name
+SUBSYSTEMS=(
+  "01|MANAGEMENT|X-Road Management Services"
+  "MJ|JUSTICE|Civil Registry Services"
+  "MOH|HEALTH|National Health Services"
+  "MTC|DNTT|Land Transport and Driver Licensing Services"
+  "OSS|PORTAL|One-Stop-Shop Citizen Services Portal"
+)
 MGMT_PROVIDER="SUBSYSTEM:${INSTANCE}:GOV:01:MANAGEMENT"
 
 log()  { printf '\033[1;34m[provision-cs]\033[0m %s\n' "$*"; }
@@ -32,12 +38,26 @@ warn() { printf '\033[1;33m[provision-cs]\033[0m %s\n' "$*" >&2; }
 
 dc() { docker compose -f "$COMPOSE" "$@"; }
 
-# Create a management API key via the supported REST API and print the token.
+# Create a management API key through the same session login used by the admin UI and print the token.
 create_api_key() {
-  curl -ksS -u "${XROAD_ADMIN:-xrd:secret}" -H "Content-Type: application/json" \
+  local admin="${XROAD_ADMIN:-xrd:secret}" user pass jar xsrf
+  user="${admin%%:*}"
+  pass="${admin#*:}"
+  jar="$(mktemp)"
+  curl -ksS -c "${jar}" -o /dev/null "${CS_URL}/" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "${jar}" | tail -1)"
+  curl -ksS -b "${jar}" -c "${jar}" -H "X-XSRF-TOKEN: ${xsrf}" -o /dev/null \
+    --data-urlencode "username=${user}" --data-urlencode "password=${pass}" "${CS_URL}/login" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "${jar}" | tail -1)"
+  curl -ksS -b "${jar}" -H "X-XSRF-TOKEN: ${xsrf}" -H "Content-Type: application/json" \
     -X POST "${CS_URL}/api/v1/api-keys" \
     -d '["XROAD_SYSTEM_ADMINISTRATOR","XROAD_SECURITY_OFFICER","XROAD_REGISTRATION_OFFICER","XROAD_MANAGEMENT_SERVICE"]' |
-    python3 -c 'import json,sys; print(json.load(sys.stdin).get("key", ""))'
+    python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("key", ""))
+except Exception:
+    print("")'
+  rm -f "${jar}"
 }
 
 # api METHOD PATH [BODY] -> echoes HTTP status; treats 2xx and 409 as success
@@ -58,9 +78,9 @@ if [ -n "${CS_API_KEY:-}" ]; then
   log "using existing management API key from CS_API_KEY"
   KEY="${CS_API_KEY}"
 else
-  log "creating a management API key via REST API"
+  log "creating a management API key via UI session"
   KEY="$(create_api_key | tr -d '[:space:]')"
-  [ -n "$KEY" ] || { warn "failed to create API key via REST API; use the UI or a supported bootstrap mechanism"; exit 1; }
+  [ -n "$KEY" ] || { warn "failed to create API key via UI session; check Central Server login readiness"; exit 1; }
 fi
 AUTH="Authorization: X-Road-ApiKey token=$KEY"
 log "API key ready (${KEY:0:6}...)"
@@ -96,9 +116,12 @@ for m in "${MEMBERS[@]}"; do
 done
 
 for s in "${SUBSYSTEMS[@]}"; do
-  code="${s%%:*}"; sub="${s#*:}"
-  c=$(api POST /api/v1/subsystems "{\"subsystem_id\":{\"member_class\":\"GOV\",\"member_code\":\"${code}\",\"subsystem_code\":\"${sub}\"}}")
+  code="${s%%|*}"; rest="${s#*|}"; sub="${rest%%|*}"; name="${rest#*|}"
+  body="{\"subsystem_id\":{\"member_class\":\"GOV\",\"member_code\":\"${code}\",\"subsystem_code\":\"${sub}\"},\"subsystem_name\":\"${name}\"}"
+  c=$(api POST /api/v1/subsystems "$body")
   ok "$c" && log "  subsystem GOV/${code}/${sub} ($c)" || warn "  subsystem GOV/${code}/${sub} HTTP $c"
+  c=$(api PATCH "/api/v1/subsystems/${INSTANCE}:GOV:${code}:${sub}" "{\"subsystem_name\":\"${name}\"}")
+  ok "$c" && log "  subsystem name GOV/${code}/${sub} ($c)" || warn "  subsystem name GOV/${code}/${sub} HTTP $c"
 done
 
 log "management service provider -> ${MGMT_PROVIDER}"

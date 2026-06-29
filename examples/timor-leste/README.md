@@ -112,10 +112,15 @@ Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 | `/etc/xroad/globalconf` is empty | Generation has not succeeded yet | Fix generation first; the management service consumes it afterwards |
 
 ## Cleanup
-To shut down the sandbox and wipe all data:
+To stop the sandbox and keep X-Road state:
 ```bash
 cd examples/timor-leste
-docker compose down -v
+tools/scripts/down.sh
+```
+
+To wipe all Central Server, Security Server, and Test CA state:
+```bash
+tools/scripts/down.sh --wipe
 ```
 
 ## Layout

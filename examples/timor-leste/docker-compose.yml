@@ -15,6 +15,8 @@ services:
     ports:
       - "8888:8888"   # CA web UI + sign endpoint + OCSP
       - "8899:8899"   # TSA (timestamping)
+    volumes:
+      - testca-home:/home/ca
     networks: [xroad]
     deploy:
       resources:
@@ -36,6 +38,10 @@ services:
       XROAD_TOKEN_PIN: "123456xrd!"
       XROAD_ADMIN_USER: "xrd"
       XROAD_ADMIN_PASSWORD: "secret"
+    volumes:
+      - cs-recovered-etc:/etc/xroad
+      - cs-recovered-var:/var/lib/xroad
+      - cs-recovered-postgres-main:/var/lib/postgresql/16/main
     networks: [xroad]
     deploy:
       resources:
@@ -204,3 +210,18 @@ services:
 networks:
   xroad:
     driver: bridge
+
+volumes:
+  testca-home:
+  cs-etc:
+  cs-var:
+  cs-postgres:
+  cs-recovered-etc:
+    external: true
+    name: c21e0507bdae5f16a8f494f891ca66e1dff11ecda5ece5791443d2f39eab82a0
+  cs-recovered-var:
+    external: true
+    name: d7765f13133840d99abc3e8a9d0b3201c56e24b63a90d0b01703da2762f13fe6
+  cs-recovered-postgres-main:
+    external: true
+    name: eae27e4767107df73dea76fb7f43851bd107657f04991ac1c41bb2698dcc04d0
