@@ -42,17 +42,19 @@ docker compose exec -T testca cat /home/ca/CA/certs/tsa.cert.pem > tools/tsa.cer
 
 # Add the CA as a certification service on the Central Server (CS path is /certification-services,
 # not /certificate-authorities which is the Security Server path). The profile is the FI *Provider*
-# class to match the xrdsst FI profile. Ignore 409 if it already exists.
-HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
-    -F "certificate=@tools/ca.cert.pem;type=application/octet-stream" \
-    -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.FiVRKCertificateProfileInfoProvider" \
-    -F "tls_auth=false" \
-    -X POST "${CS_URL}/api/v1/certification-services")
-if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "409" ]; then
-    echo "  Test CA configured (HTTP $HTTP_CODE)"
-else
-    echo "  Warning: Test CA configuration returned HTTP $HTTP_CODE"
-fi
+# class to match the xrdsst FI profile. The CS backend can 400 right after init even though the UI
+# responds, so retry until it accepts (201) or it already exists (409). Fatal if it never does —
+# the Security Servers cannot validate certificates without the CA.
+for i in $(seq 1 20); do
+    HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
+        -F "certificate=@tools/ca.cert.pem;type=application/octet-stream" \
+        -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.FiVRKCertificateProfileInfoProvider" \
+        -F "tls_auth=false" \
+        -X POST "${CS_URL}/api/v1/certification-services")
+    case "$HTTP_CODE" in 201|409) break;; esac
+    sleep 5
+done
+case "$HTTP_CODE" in 201|409) echo "  Test CA configured (HTTP $HTTP_CODE)";; *) echo "  ERROR: Test CA add failed after retries (HTTP $HTTP_CODE)"; exit 1;; esac
 
 # Find the CA id and add the OCSP responder (multipart, not JSON).
 CA_ID=$(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/certification-services" | python3 -c 'import json,sys
@@ -65,15 +67,17 @@ if [ -n "$CA_ID" ]; then
     echo "  OCSP Responder configured (HTTP $HTTP_CODE)"
 fi
 
-HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
-    -F "certificate=@tools/tsa.cert.pem" \
-    -F "url=http://testca:8899" \
-    -X POST "${CS_URL}/api/v1/timestamping-services")
-if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "409" ]; then
-    echo "  TSA configured (HTTP $HTTP_CODE)"
-else
-    echo "  Warning: TSA configuration returned HTTP $HTTP_CODE"
-fi
+# TSA WITH its certificate. Without the cert, timestamping fails and every addressChange/registration
+# management request returns 500. Same transient-400 retry as the CA. Fatal if it never succeeds.
+for i in $(seq 1 20); do
+    HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
+        -F "certificate=@tools/tsa.cert.pem" \
+        -F "url=http://testca:8899" \
+        -X POST "${CS_URL}/api/v1/timestamping-services")
+    case "$HTTP_CODE" in 201|409) break;; esac
+    sleep 5
+done
+case "$HTTP_CODE" in 201|409) echo "  TSA configured (HTTP $HTTP_CODE)";; *) echo "  ERROR: TSA add failed after retries (HTTP $HTTP_CODE)"; exit 1;; esac
 
 rm -f tools/ca.cert.pem tools/tsa.cert.pem
 
