@@ -25,9 +25,10 @@ Certificate Authority and TSA before any non-sandbox use.
 ## Before pushing to GitHub
 
 1. Confirm `.gitignore` is in place and `git status` shows no `.env`, keys, certs, or anchors.
-2. Run a secret scan: `pre-commit run --all-files` (config in [.pre-commit-config.yaml](.pre-commit-config.yaml))
-   or `gitleaks detect --source .`
-3. Review the diff for hardcoded credentials or PII.
+2. Enable the tracked commit hook once per clone: `git config core.hooksPath .githooks`.
+3. Run the local commit check: `scripts/check-commit-security.sh`.
+4. Optionally run a deeper scan with `gitleaks detect --source .`.
+5. Review the diff for hardcoded credentials or PII.
 
 ## National standards (GovTL)
 
