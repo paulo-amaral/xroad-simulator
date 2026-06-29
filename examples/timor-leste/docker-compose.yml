@@ -137,6 +137,16 @@ services:
     depends_on: [eid-mock, ekyc-mock, dntt-mock, mj-mock]
     networks: [xroad]
 
+  # Hurl E2E testing
+  hurl:
+    image: ghcr.io/orange-opensource/hurl:latest
+    profiles: [test]
+    volumes:
+      - ./tools:/tools:ro
+    command: --insecure --test /tools/e2e.hurl
+    networks: [xroad]
+    depends_on: [ss-oss]
+
 networks:
   xroad:
     driver: bridge
