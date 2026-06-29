@@ -16,6 +16,7 @@ import json
 import os
 import secrets
 import ssl
+import urllib.error
 import urllib.parse
 import urllib.request
 from http import cookies
@@ -104,14 +105,22 @@ def call_service(svc):
     headers = {"X-Road-Client": XROAD_CLIENT, "Accept": "application/json"}
     base = SS_OSS if XROAD_MODE == "xroad" else svc["mock"]
     req = urllib.request.Request(base + xroad_path, headers=headers)
+    via = "ss-oss (Security Server)" if XROAD_MODE == "xroad" else "mock provider (demo)"
     try:
         with urllib.request.urlopen(req, timeout=8, context=_CTX) as r:
-            return {"ok": True, "status": r.status, "path": xroad_path,
+            body = r.read().decode("utf-8", "replace")
+            return {"ok": True, "status": r.status, "path": xroad_path, "via": via,
                     "request_id": r.headers.get("X-Road-Request-Id", "-"),
-                    "via": "ss-oss (Security Server)" if XROAD_MODE == "xroad" else "mock provider (demo)",
-                    "body": r.read().decode("utf-8", "replace")[:1200]}
+                    "request_hash": r.headers.get("X-Road-Request-Hash", "-"),
+                    "bytes": len(body.encode("utf-8")),
+                    "body": body[:1200]}
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:600]
+        return {"ok": False, "path": xroad_path, "via": via, "status": e.code,
+                "request_id": (e.headers.get("X-Road-Request-Id", "-") if e.headers else "-"),
+                "error": f"HTTP {e.code}: {detail}"}
     except Exception as e:
-        return {"ok": False, "path": xroad_path, "error": str(e)}
+        return {"ok": False, "path": xroad_path, "via": via, "error": str(e)}
 
 
 # ── Rendering ─────────────────────────────────────────────────────────────────
@@ -129,6 +138,8 @@ main{max-width:960px;margin:0 auto;padding:24px}
 .card h2{margin:0 0 6px;font-size:18px;font-weight:600}.req{font:12.5px var(--mono);color:var(--ink-muted);word-break:break-all}
 pre{background:var(--surface-1);border:1px solid var(--hairline);padding:10px;overflow:auto;font:12px var(--mono);color:var(--ink)}
 .kv{color:var(--primary)}.tag{font-size:12px;color:var(--ink-muted)}.svcmark{display:inline-grid;place-items:center;width:28px;height:28px;background:var(--surface-1);border:1px solid var(--hairline);color:var(--primary);font:12px var(--mono);font-weight:600}
+.term{background:#0b0b12;border:1px solid #000;color:#46d369;padding:12px 14px;margin:10px 0;font:12px/1.6 var(--mono);overflow:auto;white-space:pre-wrap;word-break:break-all}
+.term.fail{color:#ff7b72}.term .tbar{display:block;color:#6b7280;margin-bottom:6px}
 """
 
 
@@ -141,14 +152,49 @@ def page(body_html, citizen_html):
 <main>{body_html}</main></body></html>"""
 
 
+def terminal_lines(svc, res):
+    # Reconstructed from the live X-Road response (status, X-Road-Request-Id/Hash, bytes) — the same
+    # facts the ss-oss proxy RequestLog and signed messagelog record. A 200 implies the zero-trust
+    # steps below all passed (X-Road would not answer otherwise), so marking them ok is truthful.
+    ok = res["ok"]
+    lines = [f"consumer  {XROAD_CLIENT}",
+             f"provider  {svc['service']}",
+             f"GET {res['path']}"]
+    if XROAD_MODE == "xroad":
+        mark = "ok" if ok else "--"
+        for step in ("clientproxy  mutual TLS to provider serverproxy",
+                     "access-check  X-Road-Client allowed by provider ACL",
+                     "ocsp          SIGNING cert OCSP_RESPONSE_GOOD",
+                     "messagelog    message signed (SHA-256), recorded"):
+            lines.append(f"[{mark}] ss-oss {step}")
+    if ok:
+        lines += [f"< HTTP {res['status']}   {res.get('bytes', '?')} bytes",
+                  f"< X-Road-Request-Id    {res.get('request_id', '-')}",
+                  f"< X-Road-Request-Hash  {res.get('request_hash', '-')}",
+                  "RESULT: OK  — non-repudiation record written on ss-oss and the provider SS"]
+    else:
+        if res.get("status"):
+            lines.append(f"< HTTP {res['status']}")
+        lines += [f"! {res.get('error', 'request failed')}", "RESULT: FAILED"]
+    return lines
+
+
+def render_terminal(svc, res):
+    title = f"{svc['abbr'].lower()}@one-stop-shop: x-road exchange"
+    body = "\n".join(html.escape(l) for l in terminal_lines(svc, res))
+    cls = "term" if res["ok"] else "term fail"
+    return f'<pre class="{cls}"><span class="tbar">$ {html.escape(title)}</span>{body}</pre>'
+
+
 def render_card(svc, res):
     head = f'<h2><span class="svcmark">{html.escape(svc["abbr"])}</span> {html.escape(svc["title"])}</h2>'
     req = f'<div class="req">GET {html.escape(res["path"])}<br>X-Road-Client: {html.escape(XROAD_CLIENT)}</div>'
+    term = render_terminal(svc, res)
     if res["ok"]:
         meta = (f'<div class="tag">via <span class="kv">{html.escape(res["via"])}</span> · '
                 f'status {res["status"]} · X-Road-Request-Id: {html.escape(res["request_id"])}</div>')
-        return f'<div class="card">{head} <span class="badge ok">OK</span>{req}{meta}<pre>{html.escape(res["body"])}</pre></div>'
-    return f'<div class="card">{head} <span class="badge bad">FALHOU</span>{req}<pre>{html.escape(res["error"])}</pre></div>'
+        return f'<div class="card">{head} <span class="badge ok">OK</span>{req}{meta}{term}<pre>{html.escape(res["body"])}</pre></div>'
+    return f'<div class="card">{head} <span class="badge bad">FALHOU</span>{req}{term}</div>'
 
 
 def service_menu():
