@@ -1,0 +1,9 @@
+---
+# Simulate the X-Road Security Server installation across the distro matrix.
+# Requires the community.docker collection:  ansible-galaxy collection install community.docker
+- name: Install X-Road Security Server
+  hosts: xroad
+  become: true
+  gather_facts: true
+  roles:
+    - role: xroad_security_server

@@ -1,0 +1,36 @@
+---
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+      - ca-certificates
+      - lsb-release
+    state: present
+    update_cache: true
+
+- name: Add NIIS Artifactory signing key
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL {{ xroad_gpg_key_url }} | gpg --dearmor --yes -o {{ xroad_apt_keyring }}
+    creates: "{{ xroad_apt_keyring }}"
+
+- name: Add X-Road apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ xroad_apt_keyring }}] {{ xroad_apt_repo_url }} {{ ansible_distribution_release }}-current main"
+    filename: xroad
+    state: present
+    update_cache: true
+
+# A non-interactive real install must preseed debconf (admin account, ports, etc.) per the
+# Security Server installation guide. In simulation mode the package step runs in check mode,
+# so the prompts are not reached. Supply the selections via xroad_debconf_selections (defaults).
+- name: Preseed debconf for a non-interactive real install
+  ansible.builtin.debconf:
+    name: xroad-common
+    question: "{{ item.question }}"
+    vtype: "{{ item.vtype }}"
+    value: "{{ item.value }}"
+  loop: "{{ xroad_debconf_selections }}"
+  no_log: true
+  when: not (xroad_simulate | bool) and xroad_debconf_selections | length > 0

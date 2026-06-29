@@ -1,0 +1,68 @@
+# ── Secrets & credentials (never commit) ──────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.env
+secrets/
+**/secrets/
+
+# PKI material: private keys, certificates, CSRs, keystores
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.csr
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.gpg
+!**/*.example.pem
+
+# X-Road configuration anchors and downloaded global configuration (environment-specific)
+**/anchors/*.xml
+*-anchor.xml
+globalconf/
+
+# ── Terraform ─────────────────────────────────────────────────────────────────
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+.terraform.lock.hcl
+
+# Generated Ansible inventory (produced by Terraform)
+infra/ansible/inventory.ini
+*.retry
+
+# ── Docker / runtime artifacts ────────────────────────────────────────────────
+**/volumes/
+**/data/
+
+# Generated SBOMs and Python venv/caches
+sbom*.json
+**/.venv/
+**/__pycache__/
+
+# ── Tooling / OS noise ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local Claude/tooling caches
+.claude/
+**/.claude/
+**/.impeccable/

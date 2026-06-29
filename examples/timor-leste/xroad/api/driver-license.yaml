@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: Driver License Service (DNTT)
+  version: "1.0.0"
+  description: >
+    Driver license lookup. Published on X-Road by TL-TEST/GOV/MTC/DNTT. Consumed through the caller's
+    Security Server with an X-Road-Client header.
+servers:
+  - url: /r1/TL-TEST/GOV/MTC/DNTT/driver-license/v1
+paths:
+  /licenses/{id}:
+    get:
+      operationId: getDriverLicense
+      summary: Retrieve a driver license by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, pattern: "^TL-[0-9A-Z-]+$" }
+        - name: X-Road-Client
+          in: header
+          required: true
+          schema: { type: string, example: "TL-TEST/GOV/OSS/PORTAL" }
+      responses:
+        "200":
+          description: Driver license found
+          headers:
+            X-Road-Request-Id: { schema: { type: string } }
+            X-Road-Request-Hash: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverLicense" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+components:
+  schemas:
+    DriverLicense:
+      type: object
+      required: [id, holderName, categories, status, validUntil]
+      properties:
+        id: { type: string, example: "TL-12345" }
+        holderName: { type: string }
+        categories: { type: array, items: { type: string, example: "B" } }
+        status: { type: string, enum: [valid, suspended, expired] }
+        issuedAt: { type: string, format: date }
+        validUntil: { type: string, format: date }
+  responses:
+    Problem:
+      description: Error (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer }
+              detail: { type: string }

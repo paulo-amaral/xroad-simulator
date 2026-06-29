@@ -1,0 +1,87 @@
+# X-Road Security Server (Sidecar) on Kubernetes — one ministry per copy of this file.
+# Deploy the official NIIS sidecar image; provision afterwards with xrdsst against :4000.
+# Parameterize per ministry by changing: the name suffix (mj/moh/mtc/oss) and the labels.
+# Test/dev manifest: replace the Secret values and use a real StorageClass + approved CA in production.
+#
+#   kubectl apply -f security-server.yaml
+#   kubectl -n xroad port-forward svc/ss-oss 5000:4000     # then open https://localhost:5000
+#
+# The StatefulSet gives the pod a stable network identity (ss-oss-0.ss-oss.xroad.svc) so other
+# Security Servers can reach it on 5500/5577 — that is the Kubernetes equivalent of giving each
+# Security Server a routable address (the same lesson as the Docker hostname fix).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: xroad
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ss-oss-credentials
+  namespace: xroad
+type: Opaque
+stringData:
+  XROAD_TOKEN_PIN: "123456xrd!"        # sandbox PIN; use a sealed/external secret in production
+  XROAD_ADMIN_USER: "xrd"
+  XROAD_ADMIN_PASSWORD: "secret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ss-oss
+  namespace: xroad
+  labels: { app: ss-oss, role: security-server }
+spec:
+  clusterIP: None            # headless: stable per-pod DNS for inter-SS mTLS
+  selector: { app: ss-oss }
+  ports:
+    - { name: admin,    port: 4000 }   # admin UI + management REST API (local only — do not expose)
+    - { name: message,  port: 5500 }   # Message Transport Protocol (mTLS) between Security Servers
+    - { name: ocsp,     port: 5577 }   # OCSP responses between Security Servers
+    - { name: is-http,  port: 8080 }   # information system access (internal)
+    - { name: is-https, port: 8443 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ss-oss
+  namespace: xroad
+spec:
+  serviceName: ss-oss
+  replicas: 1
+  selector: { matchLabels: { app: ss-oss } }
+  template:
+    metadata:
+      labels: { app: ss-oss, role: security-server }
+    spec:
+      containers:
+        - name: security-server
+          image: niis/xroad-security-server-sidecar:7.7.0
+          envFrom:
+            - secretRef: { name: ss-oss-credentials }
+          ports:
+            - { containerPort: 4000 }
+            - { containerPort: 5500 }
+            - { containerPort: 5577 }
+            - { containerPort: 8080 }
+            - { containerPort: 8443 }
+          readinessProbe:
+            tcpSocket: { port: 4000 }
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          resources:
+            requests: { cpu: "500m", memory: "1.5Gi" }
+            limits:   { cpu: "2",    memory: "3Gi" }
+          volumeMounts:
+            - { name: xroad-config, mountPath: /etc/xroad }
+            - { name: xroad-data,   mountPath: /var/lib/xroad }
+  volumeClaimTemplates:
+    - metadata: { name: xroad-config }
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources: { requests: { storage: 1Gi } }
+    - metadata: { name: xroad-data }
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources: { requests: { storage: 5Gi } }

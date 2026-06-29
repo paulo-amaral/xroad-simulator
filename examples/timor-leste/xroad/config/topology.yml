@@ -1,0 +1,75 @@
+# Timor-Leste X-Road sandbox topology (TEST). Illustrative identifiers; adjust to real registry codes.
+x_road_instance: TL-TEST
+member_class: GOV
+
+# The Central Server is operated by the Ministry of Transport and Communications (TIC Timor).
+# It is the instance authority (member registry, policy, signed global configuration). Hosting it
+# at MTC is an operational choice; it grants no access to other ministries' data, which stays
+# governed by certificates and ACLs. Each ministry keeps its OWN database (decentralized model;
+# no central data lake). Citizens enter through the One-Stop-Shop portal (OSS), which authenticates
+# them with e-KYC / eID and then calls services over X-Road on their behalf.
+central_server:
+  host: MTC / TIC Timor
+  instance: TL-TEST
+
+members:
+  - name: Ministry of Justice
+    member_code: MJ
+    security_server: ss-mj
+    database: mj-db          # civil registry (birth, marriage, death records)
+    subsystems:
+      - code: JUSTICE        # provider of civil-registry services; also consumes driver-license
+        role: provider+consumer
+        services:
+          - code: birth-certificate   # birth certificate (civil registry)
+            version: v1
+            type: REST
+            internal_url: http://mj-mock:8080
+
+  - name: Ministry of Health
+    member_code: MOH
+    security_server: ss-moh
+    subsystems:
+      - code: HEALTH         # consumer of driver-license
+        role: consumer
+
+  - name: Ministry of Transport and Communications (DNTT)
+    member_code: MTC
+    security_server: ss-mtc
+    database: dntt-db        # each ministry owns its database (no central data lake)
+    subsystems:
+      - code: DNTT           # provider of the driver-license service
+        role: provider
+        services:
+          - code: driver-license
+            version: v1
+            type: REST
+            internal_url: http://dntt-mock:8080   # stand-in provider information system
+
+  - name: One-Stop-Shop (one-stop-shop portal)
+    member_code: OSS
+    security_server: ss-oss
+    subsystems:
+      - code: PORTAL         # citizen-facing portal; consumer on behalf of citizens
+        role: consumer
+        citizen_auth: e-KYC + eID (OIDC)   # citizen identity is handled here, NOT by X-Road
+        # Sandbox identity mocks (outside X-Road): eid-mock (OIDC) + ekyc-mock (verify).
+        # The portal asserts the citizen user id on each X-Road call for provider-side
+        # authorization and audit. Session/eID tokens never travel over X-Road.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACCESS POLICY — DEFINE THIS (least privilege). Who may call each service?
+# This is a security decision, not a default. Grant only the subsystems that need it.
+# Edit the list below; it maps 1:1 to the access grants applied on ss-mtc.
+access_grants:
+  driver-license:               # provided by GOV/MTC/DNTT
+    - TL-TEST/GOV/OSS/PORTAL     # One-Stop-Shop, on behalf of authenticated citizens
+    - TL-TEST/GOV/MJ/JUSTICE     # Justice may verify driver licenses
+    - TL-TEST/GOV/MOH/HEALTH     # Health may verify driver licenses
+  birth-certificate:            # provided by GOV/MJ/JUSTICE (civil registry)
+    - TL-TEST/GOV/OSS/PORTAL     # citizens request the certificate via One-Stop-Shop
+    - TL-TEST/GOV/MOH/HEALTH     # Health may verify birth records (e.g. newborn care)
+    # Justice is the provider; citizens may also request the certificate in person at MJ.
+    # Add or remove subsystems here. Every grant must have a matching deny test.
+    # Least privilege: grant the portal only the services citizens actually use.
+# ─────────────────────────────────────────────────────────────────────────────

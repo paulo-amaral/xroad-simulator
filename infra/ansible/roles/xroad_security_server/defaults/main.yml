@@ -1,0 +1,19 @@
+---
+# X-Road package to install. Pin a full version for reproducibility, e.g. "xroad-securityserver=7.7.0".
+xroad_package: xroad-securityserver
+
+# Simulation guard. When true, the package step runs in check mode: it resolves the repo and dependencies
+# without triggering the interactive debconf prompts a real install requires. Set to false on a proper
+# systemd VM that you intend to fully provision and then configure (Central Server, CA, anchor).
+xroad_simulate: true
+
+# Non-interactive real install: preseed debconf per the Security Server installation guide.
+# Each item is {question, vtype, value}. Empty by default (simulation needs none). Fill per the
+# IG for a LAN deploy, e.g.: - { question: "xroad-common/username", vtype: "string", value: "xrd" }
+xroad_debconf_selections: []
+
+# Official NIIS package sources (verified against the Security Server installation guide).
+xroad_apt_repo_url: https://artifactory.niis.org/xroad-release-deb
+xroad_apt_keyring: /usr/share/keyrings/niis-artifactory-keyring.gpg
+xroad_gpg_key_url: https://artifactory.niis.org/api/gpg/key/public
+xroad_yum_repo_baseurl: https://artifactory.niis.org/xroad-release-rpm

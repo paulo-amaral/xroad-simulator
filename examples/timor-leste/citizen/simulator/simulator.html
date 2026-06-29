@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>X-Road Timor-Leste — Service flow simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  /* Lavender X-Road topology palette */
+  :root{
+    --primary:#6d3ff5; --blue-60:#4f27d8; --on-primary:#ffffff;
+    --ink:#2f2547; --ink-muted:#62577a; --ink-subtle:#9b92b3;
+    --canvas:#ffffff; --surface-1:#f2edff; --surface-2:#e5def7;
+    --hairline:#ded6f2; --hairline-strong:#6d3ff5;
+    --success:#24a148; --warning:#f1c21b; --error:#da1e28;
+    --sans:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;
+    --mono:'IBM Plex Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:var(--sans);font-size:16px;line-height:1.5;letter-spacing:.16px;
+    background:var(--canvas);color:var(--ink);}
+
+  header{padding:16px 24px;border-bottom:1px solid var(--hairline);background:var(--canvas);
+    display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+  header h1{margin:0;font-size:28px;font-weight:300;line-height:1.25;letter-spacing:0;}
+  header p{margin:4px 0 0;color:var(--ink-muted);font-size:14px;letter-spacing:.16px;max-width:760px;}
+  .spacer{flex:1;}
+  .links{display:flex;gap:0;border:1px solid var(--hairline);}
+  .links a{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;
+    color:var(--primary);text-decoration:none;background:var(--canvas);border-right:1px solid var(--hairline);letter-spacing:.16px;}
+  .links a:last-child{border-right:0;}
+  .links a:hover{background:var(--surface-1);color:var(--blue-60);}
+  .links a .sq{width:8px;height:8px;background:var(--primary);}
+
+  .wrap{display:grid;grid-template-columns:1fr 360px;grid-template-rows:1fr 230px;height:calc(100vh - 78px);}
+  .stage{grid-row:1;grid-column:1;position:relative;overflow:auto;background:var(--canvas);}
+  svg{display:block;}
+  .role-note{width:1200px;margin:0;padding:14px 24px 20px;border-top:1px solid var(--hairline);
+    background:var(--surface-1);display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .role-note div{font-size:12.5px;color:var(--ink-muted);line-height:1.45;}
+  .role-note strong{display:block;color:var(--primary);font-size:12px;margin-bottom:4px;}
+  .role-note code{font-family:var(--mono);font-size:12px;color:var(--ink);}
+  aside{grid-row:1;grid-column:2;border-left:1px solid var(--hairline);background:var(--canvas);display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+  /* Linux-terminal footer: full width, black, colored per request */
+  .terminal{grid-row:2;grid-column:1 / 3;background:#0a0a0a;display:flex;flex-direction:column;min-height:0;border-top:1px solid #000;}
+  .termbar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#161616;border-bottom:1px solid #2a2a2a;}
+  .termbar .dot{width:11px;height:11px;border-radius:50%;}
+  .termbar .ttl{color:#9b92b3;font-family:var(--mono);font-size:12px;margin-left:8px;}
+  .sect{padding:16px;border-bottom:1px solid var(--hairline);flex:none;}
+  .eyebrow{font-size:12px;letter-spacing:.32px;color:var(--ink-subtle);margin:0 0 12px;text-transform:none;}
+
+  .scn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:0;padding:14px 16px;
+    border:1px solid var(--hairline);border-bottom:0;background:var(--canvas);color:var(--ink);cursor:pointer;
+    font-family:var(--sans);font-size:14px;letter-spacing:.16px;}
+  .scn:last-of-type{border-bottom:1px solid var(--hairline);}
+  .scn:hover{background:var(--surface-1);}
+  .scn.on{background:var(--surface-1);font-weight:600;box-shadow:inset 3px 0 0 var(--primary);}
+  .scn .ic{width:8px;height:8px;flex:none;background:var(--ink);}
+  .scn.deny .ic{background:var(--error);}
+
+  .playbar{display:flex;align-items:center;gap:0;margin-top:16px;border:1px solid var(--hairline);}
+  .playbar button{background:var(--canvas);border:0;border-right:1px solid var(--hairline);color:var(--ink);
+    padding:10px 16px;font-size:14px;cursor:pointer;font-family:var(--sans);letter-spacing:.16px;}
+  .playbar button:hover{background:var(--surface-1);}
+  .playbar button:disabled{color:var(--ink-subtle);cursor:not-allowed;background:var(--canvas);}
+  #play{color:var(--primary);font-weight:600;}
+  .playbar label{font-size:12px;color:var(--ink-muted);margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px;}
+  input[type=range]{accent-color:var(--primary);width:88px;}
+
+  .detail{padding:16px;border-bottom:1px solid var(--hairline);min-height:104px;flex:none;}
+  .detail .name{font-weight:600;font-size:16px;letter-spacing:.16px;}
+  .detail .role{color:var(--ink-muted);font-size:14px;margin:4px 0 12px;letter-spacing:.16px;}
+  .detail .row{display:flex;gap:12px;font-size:12px;margin:8px 0;letter-spacing:.16px;align-items:flex-start;}
+  .detail .k{color:var(--ink-subtle);min-width:76px;flex:none;padding-top:3px;}
+  .detail .chip{display:inline-block;background:var(--surface-1);border:1px solid var(--hairline);
+    padding:2px 8px;margin:0 6px 6px 0;font-family:var(--mono);font-size:12px;color:var(--ink);}
+  .detail a{color:var(--primary);}
+
+  .log{flex:1;overflow:auto;padding:10px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.65;background:#0a0a0a;color:#cfcfcf;}
+  .log div{padding:1px 8px;margin:0;border-left:2px solid transparent;}
+  .log div.cur{background:#18181b;border-left-color:var(--rc,#27c93f);}
+  .log .ok{color:#3ddc84;} .log .sec{color:var(--rc,#cfcfcf);} .log .err{color:#ff5f56;}
+  .log .sys{color:#5ab0ff;} .log .mut{color:#6b6b6b;} .log .mgmt{color:#c084fc;}
+
+  .ports{padding:16px;flex:1;min-height:0;overflow:auto;}
+  .ports table{width:100%;border-collapse:collapse;font-size:12px;letter-spacing:.16px;}
+  .ports td{padding:6px 4px;border-bottom:1px solid var(--hairline);vertical-align:top;}
+  .ports td.p{font-family:var(--mono);color:var(--primary);white-space:nowrap;}
+  .ports .grp td{color:var(--ink-subtle);font-size:11px;letter-spacing:.32px;padding-top:14px;border-bottom:0;}
+
+  svg text{font-family:var(--sans);}
+
+  /* Standards modal */
+  .stdbtn{width:100%;margin-top:12px;padding:12px 16px;background:var(--primary);color:#fff;border:0;font-family:var(--sans);font-size:14px;cursor:pointer;letter-spacing:.16px;text-align:center;}
+  .stdbtn:hover{background:var(--blue-60);}
+  .modal{position:fixed;inset:0;background:rgba(22,22,22,.55);display:none;z-index:50;}
+  .modal.open{display:flex;}
+  .modal-card{margin:auto;width:min(980px,92vw);max-height:88vh;overflow:auto;background:#fff;border:1px solid var(--hairline);}
+  .modal-head{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--hairline);padding:20px 24px;display:flex;align-items:flex-start;gap:16px;}
+  .modal-head h2{margin:0;font-size:24px;font-weight:300;letter-spacing:0;}
+  .modal-head p{margin:6px 0 0;color:var(--ink-muted);font-size:12.5px;}
+  .modal-x{margin-left:auto;background:none;border:0;font-size:26px;line-height:1;cursor:pointer;color:var(--ink-muted);}
+  .modal-body{padding:4px 24px 28px;}
+  .trustmodel{padding:18px 0 4px;border-bottom:1px solid var(--hairline);}
+  .trustmodel p{margin:0 0 12px;color:var(--ink-muted);font-size:13px;max-width:880px;}
+  .trustmodel ul{margin:0 0 14px;padding-left:18px;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+  .trustmodel li{font-size:12.5px;color:var(--ink-muted);}
+  .trustmodel strong{color:var(--ink);font-weight:600;}
+  .stdcat{margin-top:22px;}
+  .stdcat h3{font-size:12px;letter-spacing:.32px;color:var(--ink-subtle);margin:0 0 4px;border-bottom:1px solid var(--hairline-strong);padding-bottom:6px;}
+  .std{display:grid;grid-template-columns:180px 1fr 110px;gap:14px;padding:8px 0;border-bottom:1px solid var(--surface-1);align-items:baseline;}
+  .std .ref{font-family:var(--mono);font-size:12px;color:var(--ink);}
+  .std .nm{font-size:13px;color:var(--ink-muted);}
+  .bd{display:inline-block;font-size:11px;padding:2px 8px;white-space:nowrap;letter-spacing:.16px;}
+  .bd.native{background:#defbe6;color:#0e6027;}
+  .bd.harden{background:#fcf4d6;color:#684e00;}
+  .bd.add{background:#fff1f1;color:#a2191f;}
+  @media (max-width: 760px){
+    .trustmodel ul{grid-template-columns:1fr;}
+    .role-note{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>X-Road Timor-Leste — Service flow simulator</h1>
+    <p>Sandbox (TL-TEST). The Central Server is operated by MTC / TIC Timor. Citizens enter through the
+       One-Stop-Shop (Balkaun Uniku); each ministry runs its own Security Server and database.</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="links">
+    <a href="http://localhost:8000" target="_blank" rel="noopener"><span class="sq"></span>One-Stop-Shop</a>
+    <a href="https://localhost:4000" target="_blank" rel="noopener"><span class="sq"></span>Central Server</a>
+    <a href="http://localhost:8888/testca/" target="_blank" rel="noopener"><span class="sq"></span>Certificate Authority</a>
+  </div>
+</header>
+
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2>Standards X-Road follows &middot; norms Timor-Leste needs</h2>
+        <p>RFCs, ISO/IEC, ETSI, NIST, EU/eIDAS, OASIS &mdash; grounded in <code>docs/govtl-compliance.md</code>.
+           <span class="bd native">native</span> X-Road provides &middot;
+           <span class="bd harden">harden</span> TL must enforce &middot;
+           <span class="bd add">add</span> TL must adopt</p>
+      </div>
+      <button class="modal-x" id="modalx" aria-label="close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <section class="trustmodel">
+        <p>The Security Server is the single gateway between an information system and the network, and it encapsulates the security mechanisms below. Configure and verify them; never bypass them.</p>
+        <ul>
+          <li><strong>PKI (X.509).</strong> Every Security Server holds authentication certificates for the inter-server channel and signing certificates for member identity on each message.</li>
+          <li><strong>Mutual TLS (mTLS).</strong> Security Servers authenticate each other with mutual certificate-based TLS before any message flows. The network is never trusted.</li>
+          <li><strong>Message signing.</strong> Every message is cryptographically signed as digital evidence. Unsigned or tampered messages are rejected.</li>
+          <li><strong>OCSP validation.</strong> Certificate validity is checked through OCSP. Revoked or expired certificates fail closed.</li>
+          <li><strong>Timestamp validation (TSA, RFC 3161).</strong> Messages and signatures are logged and batch-timestamped for long-term proof.</li>
+          <li><strong>Signed global configuration.</strong> The Central Server signs the global configuration; Security Servers reject unsigned or modified configuration.</li>
+        </ul>
+      </section>
+      <div id="stdbody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 1200 780" width="1200" height="780" role="img" aria-label="X-Road topology"></svg>
+    <div class="role-note">
+      <div><strong>Operator</strong>Runs the X-Road instance services: Central Server governance, management service provider, trust setup, approvals and monitoring. In this sandbox MTC/TIC Timor operates <code>cs</code> and <code>ss-mtc</code> hosts <code>MANAGEMENT</code>.</div>
+      <div><strong>Consumer</strong>Calls a service through its own Security Server. It sends the <code>X-Road-Client</code> identity and must have an ACL grant before the provider accepts the request.</div>
+      <div><strong>Provider</strong>Publishes a service behind its Security Server. It owns the real information system/database and decides which consumers get access.</div>
+    </div>
+  </div>
+  <aside>
+    <div class="sect">
+      <p class="eyebrow">Scenarios</p>
+      <button class="scn" data-scn="birth"><span class="ic"></span>Citizen requests a birth certificate · Justice</button>
+      <button class="scn" data-scn="dntt"><span class="ic"></span>Citizen checks a driver license · DNTT</button>
+      <button class="scn" data-scn="health"><span class="ic"></span>Health consults a birth certificate · MoH → Justice</button>
+      <button class="scn" data-scn="just"><span class="ic"></span>Justice queries DNTT · system to system</button>
+      <button class="scn" data-scn="register"><span class="ic"></span>Register a subsystem · via management service</button>
+      <button class="scn deny" data-scn="deny"><span class="ic"></span>Access denied · subsystem without ACL</button>
+      <div class="playbar">
+        <button id="play" disabled>Play</button>
+        <button id="step">Step</button>
+        <button id="reset">Reset</button>
+        <label>speed <input id="speed" type="range" min="0.5" max="2.5" step="0.5" value="1"></label>
+      </div>
+      <button class="stdbtn" id="stdbtn">Standards &amp; norms</button>
+    </div>
+
+    <div class="detail" id="detail">
+      <div class="name">Hover a node</div>
+      <div class="role">Move the pointer over any server, database or actor to see its ports, subsystem and services. Click a server to open its admin UI.</div>
+    </div>
+
+    <div class="ports">
+      <p class="eyebrow">Ports &amp; interfaces</p>
+      <table>
+        <tr class="grp"><td colspan="2">External · between Security Servers (untrusted network)</td></tr>
+        <tr><td class="p">5500</td><td>Message Transport Protocol (mTLS, signed multipart)</td></tr>
+        <tr><td class="p">5577</td><td>OCSP responses between Security Servers</td></tr>
+        <tr class="grp"><td colspan="2">Security Server → Central Server / CA</td></tr>
+        <tr><td class="p">4001</td><td>Communication with the Central Server</td></tr>
+        <tr><td class="p">80 / 443</td><td>Global conf download · OCSP · timestamping</td></tr>
+        <tr><td class="p">4002</td><td>Management services (registration requests)</td></tr>
+        <tr class="grp"><td colspan="2">Internal · information system ↔ Security Server</td></tr>
+        <tr><td class="p">8080 / 8443</td><td>Information system access points (HTTP/HTTPS)</td></tr>
+        <tr class="grp"><td colspan="2">Admin UIs (local only)</td></tr>
+        <tr><td class="p">4000</td><td>Central Server admin UI + REST API</td></tr>
+        <tr><td class="p">1000/2000/3000/5000</td><td>ss-mj / ss-moh / ss-mtc / ss-oss admin UI</td></tr>
+        <tr class="grp"><td colspan="2">Trust services &amp; identity</td></tr>
+        <tr><td class="p">8888</td><td>Certificate Authority: web · sign · OCSP</td></tr>
+        <tr><td class="p">8899</td><td>Certificate Authority: TSA (RFC 3161 timestamping)</td></tr>
+        <tr><td class="p">9080</td><td>eID — OpenID Connect provider (mock)</td></tr>
+        <tr><td class="p">9081</td><td>e-KYC verification endpoint (mock)</td></tr>
+        <tr><td class="p">8000</td><td>One-Stop-Shop portal (citizen entry)</td></tr>
+      </table>
+    </div>
+  </aside>
+
+  <div class="terminal">
+    <div class="termbar">
+      <span class="dot" style="background:#ff5f56"></span>
+      <span class="dot" style="background:#ffbd2e"></span>
+      <span class="dot" style="background:#27c93f"></span>
+      <span class="ttl" id="ttl">x-road@TL-TEST: ~</span>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const PRIMARY="#6d3ff5", INK="#2f2547", SUBTLE="#9b92b3", LINE="#7b55ff", ZONE="#f2edff", HAIR="#ded6f2", ERROR="#da1e28";
+const svg=document.getElementById("svg");
+function el(n,a){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+
+// accent for the left bar: purple for governing/security components, muted purple for trust/identity.
+function accent(cls){return (cls==="sys"||cls==="oss"||cls==="gov")?PRIMARY:(cls==="trust"?SUBTLE:"#b8b0c9");}
+
+const NODES={
+  citizen:{x:50, y:350,w:120,h:56,t:"Citizen",s:"web browser",cls:"id",
+           role:"Person using the One-Stop-Shop",ports:["8000 → portal"],svc:[]},
+  eid:    {x:50, y:200,w:120,h:56,t:"eID (IdP)",s:"OIDC provider",cls:"id",u:"http://localhost:9080/default/.well-known/openid-configuration",
+           role:"National digital identity — OpenID Connect login",ports:["9080"],svc:["authorize","token","jwks"]},
+  ekyc:   {x:50, y:500,w:120,h:56,t:"e-KYC",s:"identity proofing",cls:"id",u:"http://localhost:9081/verify",
+           role:"Identity verification (document + liveness)",ports:["9081"],svc:["/verify"]},
+  portal: {x:230,y:336,w:160,h:88,t:"One-Stop-Shop",s:"Balkaun Uniku",cls:"oss",u:"http://localhost:8000",
+           role:"Consumer information system — authenticates the citizen and calls services on their behalf",
+           ports:["8000 (web)","→ ss-oss 8443"],svc:["eID login","e-KYC","service requests"]},
+  ssoss:  {x:480,y:386,w:140,h:62,t:"ss-oss",s:"GOV/OSS · PORTAL",cls:"sys",u:"https://localhost:5000",
+           role:"Security Server of the One-Stop-Shop (consumer)",ports:["5000 admin","8443 internal","5500/5577 ext"],
+           svc:["consumer: PORTAL"]},
+  cs:     {x:560,y:88, w:200,h:64,t:"Central Server",s:"MTC / TIC Timor",cls:"gov",u:"https://localhost:4000",
+           role:"Operates TL-TEST: members, trust anchors, signed global configuration, management services",
+           ports:["4000 admin","4002 mgmt","80/443 gconf"],svc:["global conf","registration"]},
+  ca:     {x:840,y:88, w:170,h:64,t:"Certificate Authority",s:"sandbox CA · OCSP · TSA",cls:"trust",u:"http://localhost:8888/testca/",
+           role:"Certificate Authority (sandbox): issues certificates, plus the OCSP responder and time-stamping authority. One component of the X-Road PKI.",
+           ports:["8888 CA/OCSP","8899 TSA"],svc:["sign","OCSP","timestamp"]},
+  ssmj:   {x:690,y:252,w:140,h:62,t:"ss-mj",s:"GOV/MJ · JUSTICE",cls:"sys",u:"https://localhost:1000",
+           role:"Ministry of Justice Security Server (provider + consumer)",ports:["1000 admin","8443 internal","5500/5577 ext"],
+           svc:["birth-certificate/v1"]},
+  dbmj:   {x:960,y:252,db:1,t:"Justice DB",s:"civil registry",cls:"db",
+           role:"Civil registry behind mj-mock (provider information system)",ports:["8080 mj-mock"],svc:["certificates"]},
+  ssmoh:  {x:690,y:402,w:140,h:62,t:"ss-moh",s:"GOV/MOH · HEALTH",cls:"sys",u:"https://localhost:2000",
+           role:"Ministry of Health Security Server (consumer only)",ports:["2000 admin","8443 internal","5500/5577 ext"],
+           svc:["consumer: HEALTH"]},
+  dbmoh:  {x:960,y:402,db:1,t:"Health DB",s:"clinical records",cls:"db",
+           role:"Health records (internal, not published as an X-Road service)",ports:["internal"],svc:[]},
+  ssmtc:  {x:690,y:576,w:140,h:62,t:"ss-mtc",s:"DNTT + MANAGEMENT",cls:"sys",u:"https://localhost:3000",
+           role:"Transport Security Server — provider of driver-license AND host of GOV/01/MANAGEMENT (operator)",
+           ports:["3000 admin","8443 internal","5500/5577 ext","4002 mgmt"],svc:["driver-license/v1","management"]},
+  dbmtc:  {x:960,y:576,db:1,t:"DNTT DB",s:"driver licenses",cls:"db",
+           role:"Driver-license registry behind dntt-mock (provider information system)",ports:["8080 dntt-mock"],svc:["licenses"]},
+};
+const EDGES=[
+  {a:"citizen",b:"portal",lbl:"HTTPS :8000",lx:282,ly:376},
+  {a:"eid",b:"portal",lbl:"OIDC :9080",lx:232,ly:292},
+  {a:"ekyc",b:"portal",lbl:"e-KYC :9081",lx:230,ly:482},
+  {a:"portal",b:"ssoss",lbl:"REST :8443",lx:448,ly:410},
+  {a:"ssoss",b:"ssmj",via:[{x:640,y:417},{x:640,y:283}]},
+  {a:"ssoss",b:"ssmoh",lbl:"mTLS :5500",lx:648,ly:432,via:[{x:640,y:417},{x:640,y:433}]},
+  {a:"ssoss",b:"ssmtc",via:[{x:640,y:417},{x:640,y:607}]},
+  {a:"ssmj",b:"dbmj",lbl:":8080"},
+  {a:"ssmoh",b:"dbmoh"},
+  {a:"ssmtc",b:"dbmtc",lbl:":8080"},
+  {a:"ssmtc",b:"cs",lbl:"mgmt :4002",lx:824,ly:360,dash:1,via:[{x:800,y:607},{x:800,y:120}]},
+];
+const ZONES=[
+  {x:30,y:170,w:410,h:420,label:"Identity & One-Stop-Shop — outside X-Road"},
+  {x:460,y:40,w:720,h:700,label:"X-Road · TL-TEST — secure exchange between agencies"},
+];
+const MINZONES=[
+  {x:650,y:220,w:430,h:118,label:"Ministry of Justice"},
+  {x:650,y:370,w:430,h:118,label:"Ministry of Health (consumer)"},
+  {x:650,y:544,w:430,h:118,label:"Transport / DNTT — operator"},
+];
+
+function center(id){const n=NODES[id];return n.db?{x:n.x+34,y:n.y+30}:{x:n.x+n.w/2,y:n.y+n.h/2};}
+
+const zoneLabels=[];
+function drawZone(z,size){
+  svg.appendChild(el("rect",{x:z.x,y:z.y,width:z.w,height:z.h,fill:ZONE,"fill-opacity":0.82,
+    stroke:HAIR,"stroke-width":1}));
+  zoneLabels.push({z,size});
+}
+ZONES.forEach(z=>drawZone(z,14));
+MINZONES.forEach(z=>drawZone(z,12));
+
+function drawLabel(text,x,y,{anchor="middle",fill=SUBTLE,size=11,weight=400,bg="#ffffff"}={}){
+  const g=el("g",{});
+  const t=el("text",{x,y,"text-anchor":anchor,fill,"font-size":size,"font-weight":weight,"letter-spacing":"0.16"});
+  t.textContent=text;g.appendChild(t);svg.appendChild(g);
+  const b=t.getBBox();
+  g.insertBefore(el("rect",{x:b.x-4,y:b.y-2,width:b.width+8,height:b.height+4,fill:bg,"fill-opacity":0.92}),t);
+  return g;
+}
+
+function edgePath(a,b,via=[]){
+  const pts=[center(a),...via,center(b)];
+  return pts.map((p,i)=>`${i?"L":"M"}${p.x} ${p.y}`).join(" ");
+}
+function labelPoint(a,b,via=[]){
+  const pts=[center(a),...via,center(b)];
+  return pts[Math.floor((pts.length-1)/2)];
+}
+
+const edgeEls={}, edgeDir={}, edgeLabels=[];
+EDGES.forEach(({a,b,lbl,via=[],dash,lx,ly})=>{
+  const ln=el("path",{d:edgePath(a,b,via),fill:"none",stroke:LINE,"stroke-width":1,"stroke-opacity":0.72});
+  if(dash)ln.setAttribute("stroke-dasharray","5 5");
+  svg.appendChild(ln);edgeEls[a+">"+b]=ln;edgeEls[b+">"+a]=ln;edgeDir[a+">"+b]=1;edgeDir[b+">"+a]=-1;
+  if(lbl){const p=labelPoint(a,b,via);edgeLabels.push({lbl,x:lx||p.x,y:ly||p.y-6});}
+});
+
+edgeLabels.forEach(({lbl,x,y})=>drawLabel(lbl,x,y));
+zoneLabels.forEach(({z,size})=>drawLabel(z.label,z.x+14,z.y+(size>11?22:16),{
+  anchor:"start",fill:PRIMARY,size,weight:600,bg:ZONE
+}));
+
+const nodeEls={};
+for(const id in NODES){
+  const n=NODES[id];const g=el("g",{cursor:n.u?"pointer":"default"});
+  const acc=accent(n.cls);
+  if(n.db){
+    const x=n.x,y=n.y;
+    g.appendChild(el("path",{d:`M${x} ${y+8} a34 8 0 0 0 68 0 v44 a34 8 0 0 1 -68 0 z`,fill:SUBTLE,stroke:SUBTLE,"stroke-width":1}));
+    g.appendChild(el("ellipse",{cx:x+34,cy:y+8,rx:34,ry:8,fill:"#ffffff",stroke:SUBTLE,"stroke-width":1}));
+  } else {
+    g.appendChild(el("rect",{x:n.x,y:n.y,width:n.w,height:n.h,fill:"#ffffff",stroke:n.cls==="id"||n.cls==="trust"?"#9b92b3":PRIMARY,"stroke-width":1.5}));
+    g.appendChild(el("rect",{x:n.x,y:n.y,width:4,height:n.h,fill:acc}));
+  }
+  const cx=n.db?n.x+34:n.x+n.w/2, ty=n.db?n.y+30:n.y+n.h/2-(n.u?9:4);
+  const t1=el("text",{x:cx,y:ty,"text-anchor":"middle","font-weight":600,fill:n.db?"#ffffff":INK,"font-size":n.db?12:14,"letter-spacing":"0.16"});t1.textContent=n.t;g.appendChild(t1);
+  const t2=el("text",{x:cx,y:ty+16,"text-anchor":"middle",fill:n.db?"#ffffff":"#62577a","font-size":n.db?10:11,"letter-spacing":"0.16"});t2.textContent=n.s;g.appendChild(t2);
+  if(n.u){const lk=el("text",{x:cx,y:ty+31,"text-anchor":"middle",fill:PRIMARY,"font-size":11,"letter-spacing":"0.16"});lk.textContent="open ↗";g.appendChild(lk);
+    g.addEventListener("click",()=>window.open(n.u,"_blank","noopener"));}
+  g.addEventListener("mouseenter",()=>showDetail(id));
+  svg.appendChild(g);nodeEls[id]=g;
+}
+const token=el("rect",{width:12,height:12,fill:PRIMARY,opacity:0,stroke:"#ffffff","stroke-width":1.5});svg.appendChild(token);
+function placeToken(x,y){token.setAttribute("x",x-6);token.setAttribute("y",y-6);}
+
+const detail=document.getElementById("detail");
+function showDetail(id){
+  const n=NODES[id];
+  const chips=(arr,empty)=>arr.length?arr.map(p=>`<span class="chip">${p}</span>`).join(""):`<span style="color:var(--ink-subtle)">${empty}</span>`;
+  detail.innerHTML=`<div class="name">${n.t} <span style="color:var(--ink-muted);font-weight:400">· ${n.s}</span></div>
+    <div class="role">${n.role}</div>
+    <div class="row"><span class="k">Ports</span><span>${chips(n.ports,"—")}</span></div>
+    <div class="row"><span class="k">Services</span><span>${chips(n.svc,"none")}</span></div>
+    ${n.u?`<div class="row"><span class="k">Admin</span><a href="${n.u}" target="_blank" rel="noopener">${n.u}</a></div>`:""}`;
+}
+
+function citizenFlow(pss,db,service){return{path:["citizen","portal","ssoss",pss,db],steps:[
+  {hop:["citizen","portal"],lat:42,cls:"sys",msg:"Citizen signs in at the One-Stop-Shop — OIDC authorization_code + PKCE (eID :9080)"},
+  {hop:["portal","eid"],lat:10,cls:"ok",msg:"ID token verified against the eID JWKS (RS256) ✓"},
+  {hop:["portal","ekyc"],lat:8,cls:"ok",msg:"e-KYC :9081 → VERIFIED (assurance high · document+liveness) ✓"},
+  {hop:["portal","ssoss"],lat:6,cls:"mut",msg:`Portal → ss-oss :8443 — GET /r1/${service} · X-Road-Client: TL-TEST/GOV/OSS/PORTAL`},
+  {hop:["ssoss",pss],lat:24,cls:"sec",msg:`ss-oss ↔ ${pss}: mTLS handshake on :5500 — exchange authentication certificate chains`},
+  {lat:5,cls:"sec",msg:"OCSP: each SS attaches its locally CACHED validity response (refreshed periodically, not per request); the peer verifies it (RFC 6960) ✓"},
+  {hop:["ssoss",pss],lat:21,cls:"sec",msg:`X-Road Message Transport Protocol → ${pss} (:5500) — signed multipart + embedded OCSP, x-road-request-id`},
+  {lat:7,cls:"sec",msg:`${pss} verifies the chain (global conf) + signature + part hashes ✓`},
+  {lat:2,cls:"sec",msg:`Access rights (ACL): TL-TEST/GOV/OSS/PORTAL → ${service} ✓`},
+  {hop:[pss,db],lat:12,cls:"sys",msg:`${pss} → information system :8080 → query the database`},
+  {lat:4,cls:"sec",msg:"Message log (ASiC-E) on both SS; timestamping is BATCHED by the TSA asynchronously (~6h default), not per request"},
+]};}
+
+const SCN={
+  birth: citizenFlow("ssmj","dbmj","TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1"),
+  dntt:  citizenFlow("ssmtc","dbmtc","TL-TEST/GOV/MTC/DNTT/driver-license/v1"),
+  health:{path:["ssmoh","ssmj","dbmj"],steps:[
+    {lat:0,cls:"sys",msg:"Ministry of Health (GOV/MOH/HEALTH) consults a birth certificate — system to system, no portal"},
+    {hop:["ssmoh","ssmj"],lat:24,cls:"sec",msg:"ss-moh ↔ ss-mj: mTLS handshake on :5500"},
+    {lat:5,cls:"sec",msg:"OCSP: cached validity (refreshed periodically, not per request) verified — no CA call ✓"},
+    {hop:["ssmoh","ssmj"],lat:21,cls:"sec",msg:"X-Road transport :5500 — signed multipart + x-road-request-id"},
+    {lat:7,cls:"sec",msg:"ss-mj verifies the chain (global conf) + signature ✓"},
+    {lat:2,cls:"sec",msg:"Access rights (ACL): HEALTH → birth-certificate ✓"},
+    {hop:["ssmj","dbmj"],lat:12,cls:"sys",msg:"ss-mj → Justice IS :8080 → query the civil registry"},
+    {lat:4,cls:"sec",msg:"Message log + timestamp (RFC 3161)"},
+  ]},
+  just:{path:["ssmj","ssmtc","dbmtc"],steps:[
+    {lat:0,cls:"sys",msg:"Justice (GOV/MJ/JUSTICE) calls DNTT driver-license — system to system, no portal"},
+    {hop:["ssmj","ssmtc"],lat:24,cls:"sec",msg:"ss-mj ↔ ss-mtc: mTLS handshake on :5500"},
+    {lat:5,cls:"sec",msg:"OCSP: cached validity (refreshed periodically, not per request) verified — no CA call ✓"},
+    {hop:["ssmj","ssmtc"],lat:21,cls:"sec",msg:"X-Road transport :5500 — signed multipart + x-road-request-id"},
+    {lat:7,cls:"sec",msg:"ss-mtc verifies the chain (global conf) + signature ✓"},
+    {lat:2,cls:"sec",msg:"Access rights (ACL): JUSTICE → driver-license ✓"},
+    {hop:["ssmtc","dbmtc"],lat:12,cls:"sys",msg:"ss-mtc → DNTT IS :8080 → query the database"},
+    {lat:4,cls:"sec",msg:"Message log + timestamp (RFC 3161)"},
+  ]},
+  register:{path:["ssoss","ssmtc","cs"],steps:[
+    {lat:0,cls:"mgmt",msg:"ss-oss registers its subsystem GOV/OSS/PORTAL — registration is itself an X-Road call"},
+    {hop:["ssoss","ssmtc"],lat:20,cls:"sec",msg:"ss-oss → management service provider GOV/01/MANAGEMENT (hosted on ss-mtc) — mTLS :5500"},
+    {lat:6,cls:"mgmt",msg:"Request SERVICE:TL-TEST/GOV/01/MANAGEMENT/clientReg (resolves once a host exists)"},
+    {hop:["ssmtc","cs"],lat:14,cls:"mgmt",msg:"ss-mtc → Central Server :4002 — submit the client registration request"},
+    {lat:8,cls:"sec",msg:"Registration Officer approves the management request in the Central Server ✓"},
+    {lat:10,cls:"ok",msg:"Global configuration regenerated and signed — GOV/OSS/PORTAL becomes REGISTERED (~1 min)"},
+  ]},
+  deny:{path:["ssoss","ssmtc"],deny:1,steps:[
+    {lat:0,cls:"sys",msg:"A subsystem without an access grant tries to call driver-license"},
+    {hop:["ssoss","ssmtc"],lat:24,cls:"sec",msg:"mTLS handshake :5500 + OCSP :5577 — certificate valid ✓"},
+    {lat:7,cls:"sec",msg:"Signature and certificate chain verified ✓"},
+    {lat:2,cls:"err",msg:"Access rights (ACL): subsystem NOT authorized for driver-license ✗ → HTTP 403",deny:true},
+  ]},
+};
+
+const logEl=document.getElementById("log");
+let cur=null, idx=0, t=0, playing=false, speedMul=1;
+document.getElementById("speed").addEventListener("input",e=>speedMul=parseFloat(e.target.value));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms/speedMul));
+function color(){return cur&&cur.deny?ERROR:PRIMARY;}
+
+function setActiveEdge(a,b){
+  Object.values(edgeEls).forEach(e=>{e.setAttribute("stroke-width",1);e.setAttribute("stroke",LINE);e.setAttribute("stroke-opacity",0.72);});
+  const e=edgeEls[a+">"+b];if(e){e.setAttribute("stroke-width",3);e.setAttribute("stroke",color());e.setAttribute("stroke-opacity",1);}
+}
+function highlight(id){
+  for(const k in nodeEls)nodeEls[k].setAttribute("opacity",id?0.45:1);
+  if(id&&nodeEls[id])nodeEls[id].setAttribute("opacity",1);
+}
+function highlightSet(ids){for(const k in nodeEls)nodeEls[k].setAttribute("opacity",ids.includes(k)?1:0.4);}
+const uuid=()=>(crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);}));
+function hash(){const cs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";let s="";for(let i=0;i<64;i++)s+=cs[Math.random()*cs.length|0];return s+"==";}
+function logLine(msg,cls){const d=document.createElement("div");if(cls)d.className=cls;d.textContent=msg;
+  logEl.querySelectorAll(".cur").forEach(x=>x.classList.remove("cur"));d.classList.add("cur");
+  logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}
+
+function moveSeg(from,to,ms){return new Promise(res=>{
+  const path=edgeEls[from+">"+to], a=center(from), b=center(to), t0=performance.now();
+  const len=path&&path.getTotalLength?path.getTotalLength():0, dir=edgeDir[from+">"+to]||1;
+  token.setAttribute("fill",color());token.setAttribute("opacity",1);
+  (function frame(now){const k=Math.min(1,(now-t0)/(ms/speedMul));
+    const p=len?path.getPointAtLength(dir>0?len*k:len*(1-k)):{x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k};
+    placeToken(p.x,p.y);
+    k<1?requestAnimationFrame(frame):res();})(performance.now());
+});}
+
+async function doStep(){
+  if(!cur||idx>=cur.steps.length)return;
+  const s=cur.steps[idx];
+  if(s.hop){setActiveEdge(s.hop[0],s.hop[1]);highlight(s.hop[1]);await moveSeg(s.hop[0],s.hop[1],s.ms||900);}
+  t+=s.lat||0;logLine(`[+${t} ms · step ${idx+1}/${cur.steps.length}] ${s.msg}`,s.cls);idx++;
+  if(s.deny){token.setAttribute("opacity",0);logLine(`Total ${t} ms — request DENIED (fail closed)`,"err");idx=cur.steps.length;}
+  if(idx>=cur.steps.length&&!s.deny){
+    logLine("← Signed response — retracing the exact return path","mut");
+    for(let i=cur.path.length-1;i>0;i--)await moveSeg(cur.path[i],cur.path[i-1],800);
+    token.setAttribute("opacity",0);t+=6;
+    logLine(`[+${t} ms] Response delivered — X-Road proof headers (try tools/showcase.py for the live values):`,"ok");
+    logLine(`    X-Road-Request-Id: ${uuid()}`,"mgmt");
+    logLine(`    X-Road-Request-Hash: ${hash()}`,"mgmt");
+    logLine(`Total ${t} ms`,"mut");highlight(null);
+  }
+  updateButtons();
+}
+async function play(){playing=true;updateButtons();while(idx<cur.steps.length){await doStep();await sleep(420);}playing=false;updateButtons();}
+const SCNCOLOR={birth:"#c084fc",dntt:"#22d3ee",health:"#fbbf24",just:"#5ab0ff",register:"#a855f7",deny:"#ff5f56"};
+function loadScenario(key){
+  cur=SCN[key];idx=0;t=0;logEl.innerHTML="";highlight(null);
+  logEl.style.setProperty("--rc",SCNCOLOR[key]||"#cfcfcf");
+  document.getElementById("ttl").textContent="x-road@TL-TEST: ~/"+key;
+  Object.values(edgeEls).forEach(e=>{e.setAttribute("stroke-width",1);e.setAttribute("stroke",LINE);e.setAttribute("stroke-opacity",0.72);});
+  token.setAttribute("opacity",0);
+  logLine("$ x-road simulate "+key+"  — press Play, or Step hop by hop.","mut");
+  document.querySelectorAll(".scn").forEach(b=>b.classList.toggle("on",b.dataset.scn===key));
+  updateButtons();
+}
+function updateButtons(){
+  document.getElementById("play").disabled=!cur||idx>=cur.steps.length||playing;
+  document.getElementById("step").disabled=!cur||idx>=cur.steps.length||playing;
+}
+document.querySelectorAll(".scn").forEach(b=>{
+  b.addEventListener("click",()=>loadScenario(b.dataset.scn));
+  b.addEventListener("mouseenter",()=>{if(!playing&&(!cur||idx===0))highlightSet(SCN[b.dataset.scn].path);});
+  b.addEventListener("mouseleave",()=>{if(!playing&&(!cur||idx===0))highlight(null);});
+});
+document.getElementById("play").addEventListener("click",play);
+document.getElementById("step").addEventListener("click",()=>!playing&&doStep());
+document.getElementById("reset").addEventListener("click",()=>cur&&loadScenario(document.querySelector(".scn.on")?.dataset.scn||"birth"));
+updateButtons();
+
+// ── Standards & norms (grounded in docs/govtl-compliance.md) ──────────────────
+const STANDARDS=[
+  ["PKI & trust services",[
+    ["RFC 5280","X.509 v3 — national PKI / CA structure","native"],
+    ["RFC 6960 / 5280","OCSP / CRL — certificate revocation","native"],
+    ["RFC 3161","Time-stamping (TSA) — non-repudiation","native"],
+    ["RFC 5652","CMS — signed messages","native"],
+    ["ETSI EN 319 132/162","XAdES / ASiC-E — long-term signatures, message log","native"],
+    ["NIST FIPS 140-3","HSM validation for PKI keys","add"],
+    ["ETSI EN 319 (PAdES/XAdES/CAdES)","Legally valid e-signatures","harden"],
+  ]],
+  ["Transport & network",[
+    ["RFC 8705","mTLS — bidirectional system authentication","native"],
+    ["RFC 8446","TLS 1.3 (ban TLS 1.0/1.1, MD5, SHA-1)","harden"],
+    ["RFC 4301/4303","IPsec — network layer (optional)","add"],
+    ["RFC 5424","Syslog — audit trail forwarding","harden"],
+  ]],
+  ["Citizen identity (eID / e-KYC)",[
+    ["RFC 6749 + 7636","OAuth 2.0 + PKCE — citizen SSO","harden"],
+    ["OpenID Connect 1.0","Federated login at the One-Stop-Shop","native"],
+    ["RFC 7519/7515/7517 + 8725","JWT / JWS / JWK + JWT BCP (verify signature)","harden"],
+    ["NIST SP 800-63-4","Identity assurance levels (IAL/AAL)","add"],
+    ["EU 910/2014 (eIDAS)","Electronic identification & trust services","add"],
+  ]],
+  ["Cryptography",[
+    ["RFC 6234 / 8032 / 7748 / 8017","SHA-2, EdDSA, X25519, RSA — cipher policy","harden"],
+    ["AES-256 · SHA-3 · RSA-4096 · ECDSA P-384","Approved algorithm set","harden"],
+  ]],
+  ["Web & API",[
+    ["OpenAPI 3.1 (OAS)","Service contracts (publish as OpenAPI, not plain REST)","harden"],
+    ["WSDL / SOAP + XML Signature (W3C)","X-Road message protocol, signed XML","native"],
+    ["RFC 9110 / 8259 / 7807","HTTP semantics, JSON, Problem Details","native"],
+  ]],
+  ["ISO/IEC management",[
+    ["ISO/IEC 27001:2022 + 27002","ISMS for critical-infrastructure operators","harden"],
+    ["ISO/IEC 27701 / 29100","Privacy by Design, data minimization","native"],
+    ["ISO/IEC 25010:2023","Measurable software quality","add"],
+    ["ISO/IEC 19941","Cloud portability, anti lock-in","add"],
+    ["ISO 8601 / 4217 / 3166 · UTF-8 / Unicode 15","Dates, currencies, codes; Tetum + Portuguese","add"],
+  ]],
+  ["Security & governance",[
+    ["OWASP ASVS 4.0 (min L2)","Application-security verification","harden"],
+    ["SBOM (SPDX / CycloneDX)","Supply-chain transparency in CI","add"],
+    ["OCDS · UBL 2.3 · ISO 27036","Open procurement & supply-chain security","add"],
+  ]],
+  ["Legal documents (e-government)",[
+    ["OASIS Akoma Ntoso (LegalDocML)","Legislative / legal XML interoperability","add"],
+    ["W3C XML Schema / XMLDSig","Structured, signed legal & service documents","native"],
+  ]],
+];
+const stdBody=document.getElementById("stdbody");
+stdBody.innerHTML=STANDARDS.map(([cat,items])=>
+  `<div class="stdcat"><h3>${cat}</h3>`+items.map(([ref,nm,st])=>
+    `<div class="std"><span class="ref">${ref}</span><span class="nm">${nm}</span><span class="bd ${st}">${st==="native"?"X-Road native":st==="harden"?"TL: harden":"TL: add"}</span></div>`
+  ).join("")+`</div>`).join("");
+const modal=document.getElementById("modal");
+document.getElementById("stdbtn").addEventListener("click",()=>modal.classList.add("open"));
+document.getElementById("modalx").addEventListener("click",()=>modal.classList.remove("open"));
+modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("open");});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")modal.classList.remove("open");});
+</script>
+</body>
+</html>

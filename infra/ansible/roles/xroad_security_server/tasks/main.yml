@@ -1,0 +1,18 @@
+---
+- name: Configure X-Road package repository ({{ ansible_os_family }})
+  ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+
+- name: Install X-Road Security Server package
+  ansible.builtin.package:
+    name: "{{ xroad_package }}"
+    state: present
+  check_mode: "{{ xroad_simulate | bool }}"
+  register: xroad_install
+
+- name: Report simulation result
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }}):
+      package '{{ xroad_package }}'
+      {{ 'would be installed (simulation)' if xroad_simulate | bool else 'installed' }} ->
+      changed={{ xroad_install.changed }}

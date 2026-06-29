@@ -1,0 +1,14 @@
+---
+- name: Add X-Road yum repository
+  ansible.builtin.yum_repository:
+    name: xroad-release
+    description: X-Road release (NIIS)
+    baseurl: "{{ xroad_yum_repo_baseurl }}/rhel/{{ ansible_distribution_major_version }}/current"
+    gpgcheck: true
+    gpgkey: "{{ xroad_gpg_key_url }}"
+    enabled: true
+
+- name: Import NIIS signing key
+  ansible.builtin.rpm_key:
+    key: "{{ xroad_gpg_key_url }}"
+    state: present

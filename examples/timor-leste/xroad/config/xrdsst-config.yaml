@@ -1,0 +1,115 @@
+admin_credentials: XRDSST_ADMIN
+ssh_access:
+  user: XRDSST_SSH_USER
+  private_key: XRDSST_SSH_KEY
+security_server:
+- name: ss-mj
+  url: https://127.0.0.1:1000/api/v1
+  api_key_url: https://127.0.0.1:1000/api/v1/api-keys
+  api_key: SS_MJ_API_KEY
+  configuration_anchor: ./xroad/anchors/TL-TEST-anchor.xml
+  software_token_id: 0
+  software_token_pin: TOKEN_PIN
+  owner_member_class: GOV
+  owner_member_code: MJ
+  owner_dn_country: TL
+  owner_dn_org: Ministry of Justice
+  profile: FI
+  security_server_code: ss-mj
+  fqdn: ss-mj
+  clients:
+  - member_class: GOV
+    member_code: MJ
+    member_name: Ministry of Justice
+    subsystem_code: JUSTICE
+    connection_type: HTTPS_NO_AUTH
+    service_descriptions:
+    - url: http://mj-mock:8080
+      type: REST
+      rest_service_code: birth-certificate
+      access:
+      - TL-TEST/GOV/OSS/PORTAL
+      - TL-TEST/GOV/MOH/HEALTH
+  certificates:
+  - ./xroad/certs/ss-mj/sign-72716E2B0A5CB5BAA4268350C73A9215CD1A7D20.crt
+  - ./xroad/certs/ss-mj/sign-47062846051725BDBED37B8266E62AED9823855D.crt
+  - ./xroad/certs/ss-mj/auth-2F9FBD0F2876D637CC838F6B41269BED3013F0A0.crt
+- name: ss-moh
+  url: https://127.0.0.1:2000/api/v1
+  api_key_url: https://127.0.0.1:2000/api/v1/api-keys
+  api_key: SS_MOH_API_KEY
+  configuration_anchor: ./xroad/anchors/TL-TEST-anchor.xml
+  software_token_id: 0
+  software_token_pin: TOKEN_PIN
+  owner_member_class: GOV
+  owner_member_code: MOH
+  owner_dn_country: TL
+  owner_dn_org: Ministry of Health
+  profile: FI
+  security_server_code: ss-moh
+  fqdn: ss-moh
+  clients:
+  - member_class: GOV
+    member_code: MOH
+    member_name: Ministry of Health
+    subsystem_code: HEALTH
+    connection_type: HTTPS_NO_AUTH
+  certificates:
+  - ./xroad/certs/ss-moh/sign-576D0BF94140569F24FAF7434A6C49073DFD83A9.crt
+  - ./xroad/certs/ss-moh/auth-2CCA81FC048025F19C115AFD9195EA9395ECB364.crt
+  - ./xroad/certs/ss-moh/auth-00F8F921C99F02FD143DCE57B28C8A808EEBADE3.crt
+- name: ss-mtc
+  url: https://127.0.0.1:3000/api/v1
+  api_key_url: https://127.0.0.1:3000/api/v1/api-keys
+  api_key: SS_MTC_API_KEY
+  configuration_anchor: ./xroad/anchors/TL-TEST-anchor.xml
+  software_token_id: 0
+  software_token_pin: TOKEN_PIN
+  owner_member_class: GOV
+  owner_member_code: MTC
+  owner_dn_country: TL
+  owner_dn_org: Ministry of Transport and Communications
+  profile: FI
+  security_server_code: ss-mtc
+  fqdn: ss-mtc
+  clients:
+  - member_class: GOV
+    member_code: MTC
+    member_name: Ministry of Transport and Communications
+    subsystem_code: DNTT
+    connection_type: HTTPS_NO_AUTH
+    service_descriptions:
+    - url: http://dntt-mock:8080
+      type: REST
+      rest_service_code: driver-license
+      access:
+      - TL-TEST/GOV/OSS/PORTAL
+      - TL-TEST/GOV/MJ/JUSTICE
+      - TL-TEST/GOV/MOH/HEALTH
+  certificates:
+  - ./xroad/certs/ss-mtc/sign-74F1173C6C153068F2A561F37E7DCAE7A2294FAA.crt
+  - ./xroad/certs/ss-mtc/auth-5C3C610AFBD150380209E14A240BBD94AB1916D9.crt
+- name: ss-oss
+  url: https://127.0.0.1:5000/api/v1
+  api_key_url: https://127.0.0.1:5000/api/v1/api-keys
+  api_key: SS_OSS_API_KEY
+  configuration_anchor: ./xroad/anchors/TL-TEST-anchor.xml
+  software_token_id: 0
+  software_token_pin: TOKEN_PIN
+  owner_member_class: GOV
+  owner_member_code: OSS
+  owner_dn_country: TL
+  owner_dn_org: Balkaun Uniku
+  profile: FI
+  security_server_code: ss-oss
+  fqdn: ss-oss
+  clients:
+  - member_class: GOV
+    member_code: OSS
+    member_name: Balkaun Uniku
+    subsystem_code: PORTAL
+    connection_type: HTTPS_NO_AUTH
+  certificates:
+  - ./xroad/certs/ss-oss/sign-81884F72844BBFF6316034FBA19159FA2DCAC7B7.crt
+  - ./xroad/certs/ss-oss/auth-A0F96F6E4CC37C358248539504E8F903C088D065.crt
+  - ./xroad/certs/ss-oss/auth-9D3257EB4C380089D1FF0A690897CECF94A0B660.crt

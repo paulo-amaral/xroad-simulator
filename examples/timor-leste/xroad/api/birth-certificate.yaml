@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: Birth Certificate Service (DNRN / Ministry of Justice)
+  version: "1.0.0"
+  description: >
+    Civil-registry birth certificate (birth certificate). Published on X-Road by
+    TL-TEST/GOV/MJ/JUSTICE. Consumed through the caller's Security Server with an X-Road-Client header.
+servers:
+  - url: /r1/TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1
+paths:
+  /certificates/{id}:
+    get:
+      operationId: getBirthCertificate
+      summary: Retrieve a birth certificate by registry id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, pattern: "^TL-[0-9A-Z-]+$" }
+        - name: X-Road-Client
+          in: header
+          required: true
+          schema: { type: string, example: "TL-TEST/GOV/OSS/PORTAL" }
+      responses:
+        "200":
+          description: Birth certificate found
+          headers:
+            X-Road-Request-Id: { schema: { type: string } }
+            X-Road-Request-Hash: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BirthCertificate" }
+        "403": { $ref: "#/components/responses/Problem" }
+        "404": { $ref: "#/components/responses/Problem" }
+components:
+  schemas:
+    BirthCertificate:
+      type: object
+      required: [id, fullName, dateOfBirth, placeOfBirth]
+      properties:
+        id: { type: string, example: "TL-67890" }
+        fullName: { type: string }
+        dateOfBirth: { type: string, format: date }
+        placeOfBirth: { type: string }
+        municipality: { type: string }
+        registeredAt: { type: string, format: date-time }
+  responses:
+    Problem:
+      description: Error (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer }
+              detail: { type: string }

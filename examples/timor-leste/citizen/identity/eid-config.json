@@ -1,0 +1,24 @@
+{
+  "interactiveLogin": true,
+  "httpServer": "NettyWrapper",
+  "tokenCallbacks": [
+    {
+      "issuerId": "default",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "grant_type",
+          "match": "*",
+          "claims": {
+            "sub": "tl-citizen-0001",
+            "national_id": "TL-0001-1990",
+            "name": "Example Citizen",
+            "kyc_level": "high",
+            "kyc_method": "document+liveness",
+            "aud": ["balcao-unico"]
+          }
+        }
+      ]
+    }
+  ]
+}
