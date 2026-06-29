@@ -1,4 +1,4 @@
-# project-15-xroad
+# xroad simulator farm 
 
 A development sandbox and reference for building on the **X-Road data exchange layer**: a complete X-Road
 ecosystem (Central Server, test CA, Security Servers) running on Docker Compose / Kubernetes, plus consumer
