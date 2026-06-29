@@ -76,20 +76,7 @@ PY
 log "Pulling images (test/dev only)"
 docker compose -f "${COMPOSE_FILE}" pull
 
-# Start the Central Server and Test CA first; give them time to stabilise before
-# launching the memory-hungry Security Servers. All 5 Java services competing for
-# ~8 GiB on Docker Desktop triggers the OOM killer and keeps the CS in a crash loop.
-log "Starting Central Server and Test CA"
-docker compose -f "${COMPOSE_FILE}" up -d cs testca
-
-log "Waiting for the Central Server UI (${CS_URL}, up to ${WAIT_TIMEOUT}s)"
-deadline=$(( $(date +%s) + WAIT_TIMEOUT ))
-until curl -ksSf -o /dev/null "${CS_URL}" 2>/dev/null; do
-  [ "$(date +%s)" -lt "${deadline}" ] || fail "Central Server did not become ready in ${WAIT_TIMEOUT}s. Check: docker compose -f ${COMPOSE_FILE} logs cs"
-  sleep 5
-done
-
-log "Central Server is ready — starting Security Servers and remaining services"
+log "Starting all services (Docker Compose will natively wait for healthchecks)"
 docker compose -f "${COMPOSE_FILE}" up -d
 
 log "Ecosystem is up:"
