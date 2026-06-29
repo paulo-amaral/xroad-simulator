@@ -8,6 +8,27 @@ writes. Test/dev only.
 Verify the result at any time with `python3 tools/showcase.py` (live demo for officials) or
 `tools/e2e-test.sh` (pass/fail).
 
+## Official bootstrap shape
+
+This sandbox mirrors the official X-Road 7.8 `Docker/xrd-dev-stack` approach, but maps it to the
+Timor-Leste topology:
+
+1. Central Server: initialize instance `TL-TEST`, log in to the software token, create and activate
+   internal/external signing keys, add member class `GOV`, members, subsystems, and the management
+   service provider.
+2. Trust services: add the Test CA, OCSP responder, and Test TSA with its certificate, then wait for
+   successful global-configuration generation and download the anchor.
+3. Security Servers: initialize from the anchor, log in to software tokens, add timestamping,
+   add local clients, generate signing/authentication CSRs.
+4. Certificate dance: sign CSRs with the Test CA, import certificates to each Security Server,
+   register authentication certificates, and approve the Central Server management requests.
+5. Management and services: host `SUBSYSTEM:TL-TEST:GOV:01:MANAGEMENT` on `ss-mtc`, register client
+   subsystems, publish service descriptions, grant ACLs, then run Hurl/showcase verification.
+
+Use `./init.sh` for the whole path. If debugging manually, follow the staged commands printed by
+`tools/scripts/install.sh`. Avoid a full `xrdsst ... apply` during first bootstrap because it can
+collapse certificate, client-registration, and service-registration phases into the wrong order.
+
 ## 0. Central Server API access
 
 This Central Server image **rejects HTTP basic auth on `/api/v1`**, so `create_api_key` via

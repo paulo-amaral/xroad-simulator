@@ -3,8 +3,8 @@
 # The Security Servers and `xrdsst init` need this file. The anchor exists ONLY after the
 # Central Server has been initialized (instance TL-TEST, software token) - see README Step 2.
 #
-# Easy path: this script creates its own management API key via basic auth (XROAD_ADMIN, default
-# xrd:secret), so you do not need to paste CS_API_KEY by hand. Set CS_API_KEY to skip creation.
+# Easy path: this script creates its own management API key through the same session login used by
+# the Central Server UI (XROAD_ADMIN, default xrd:secret). Set CS_API_KEY to skip creation.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,12 +31,25 @@ instructions() {
 EOF
 }
 
-# Obtain an API key: create one with admin basic auth unless CS_API_KEY is already set.
+# Obtain an API key: create one with a UI session unless CS_API_KEY is already set.
 if [ -z "${CS_API_KEY:-}" ]; then
-  log "creating a management API key via basic auth (${XROAD_ADMIN%%:*}@${CS_URL})"
-  resp="$(curl -ksS -u "${XROAD_ADMIN}" -H "Content-Type: application/json" \
+  log "creating a management API key via UI session (${XROAD_ADMIN%%:*}@${CS_URL})"
+  jar="$(mktemp)"
+  trap 'rm -f "${jar:-}"' EXIT
+  user="${XROAD_ADMIN%%:*}"
+  pass="${XROAD_ADMIN#*:}"
+  curl -ksS -c "${jar}" -o /dev/null "${CS_URL}/" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "${jar}" | tail -1)"
+  curl -ksS -b "${jar}" -c "${jar}" -H "X-XSRF-TOKEN: ${xsrf}" -o /dev/null \
+    --data-urlencode "username=${user}" --data-urlencode "password=${pass}" "${CS_URL}/login" || true
+  xsrf="$(awk '$6=="XSRF-TOKEN"{print $7}' "${jar}" | tail -1)"
+  resp="$(curl -ksS -b "${jar}" -H "X-XSRF-TOKEN: ${xsrf}" -H "Content-Type: application/json" \
             -X POST "${CS_URL}/api/v1/api-keys" -d "${ROLES}" 2>/dev/null || true)"
-  CS_API_KEY="$(printf '%s' "${resp}" | grep -o '"key":"[^"]*"' | head -1 | sed 's/.*"key":"//;s/"$//')"
+  CS_API_KEY="$(printf '%s' "${resp}" | python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("key", ""))
+except Exception:
+    print("")')"
   if [ -z "${CS_API_KEY}" ]; then
     warn "API key creation failed (is the Central Server up and initialized?)"
     instructions

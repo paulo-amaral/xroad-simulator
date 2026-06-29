@@ -19,14 +19,16 @@ Administrators (e.g., TIC Timor) are responsible for bringing up the infrastruct
 
 ### Automated One-Command Setup
 
-The entire ecosystem (starting containers, configuring the Central Server, adding Trust Services, downloading anchors, and provisioning Security Servers) is fully automated. You only need one command to initialize everything:
+The entire ecosystem (starting containers, configuring the Central Server, adding Trust Services, downloading anchors, provisioning Security Servers, approving registrations, publishing services, and testing real traffic) is automated. You only need one command:
 
 ```bash
 cd examples/timor-leste
 sh init.sh
 ```
 
-*This orchestrates everything natively and securely via APIs. It uses the `xrdsst` toolkit for the Security Servers and declarative Hurl tests to verify that E2E traffic flows successfully through X-Road at the end.*
+This follows the official X-Road `xrd-dev-stack` shape: bootstrap the Central Server and trust first, initialize Security Servers, create CSRs, sign/import/register authentication certificates, approve management requests, then publish clients/services/ACLs. It uses supported REST APIs, `xrdsst`, and Hurl. It does not write directly to X-Road databases.
+
+Important: do not use a full `xrdsst -c xroad/config/xrdsst-config.yaml apply` as the main bootstrap path in this sandbox. It can try client/subsystem certificate work before the Security Servers and management services have reached the required global-configuration state. `init.sh` runs the safer staged sequence instead.
 
 UIs Available:
 - **Central Server:** `https://localhost:4000` (login `xrd` / `secret`)
@@ -49,9 +51,9 @@ X-Road authenticates **systems**, not end users. A ministry is onboarded once an
 
 `xroad/config/xrdsst-config.yaml` shows how DNTT publishes `driver-license` and the Ministry of Justice publishes
 `birth-certificate`, each granted to the One-Stop-Shop portal (and selected ministries). OpenAPI 3.1 contracts
-for both services are in `xroad/api/`. If you change who can access what, re-run:
+for both services are in `xroad/api/`. If you change who can access what, re-run the management/service phase:
 ```bash
-xrdsst -c xroad/config/xrdsst-config.yaml service apply
+tools/scripts/provision-mgmt.sh
 ```
 
 ### 2. Consuming Services (Inter-Ministry and via the portal)
@@ -98,11 +100,15 @@ Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 |---|---|---|
 | `Global configuration generation failing` | One of the required CS pieces is missing | Check `.global_conf_gen_status`, then the rows below |
 | `Signing of external configuration failed - active key missing` | No **active** signing key on a source | Add key **and Activate** on Internal **and** External (Step 2.3) |
-| `element 'managementService' is not complete ... managementRequestServiceProviderId` | Management Service Provider not set | Create `GOV` class → member `GOV/1` → subsystem `MANAGEMENT`, then set it as provider (Step 2.4-2.7) |
+| `element 'managementService' is not complete ... managementRequestServiceProviderId` | Management Service Provider not set | Create `GOV` class -> member `GOV/01` -> subsystem `MANAGEMENT`, then set `SUBSYSTEM:TL-TEST:GOV:01:MANAGEMENT` as provider |
 | *Add member* dialog shows "No data available" | No member classes exist | Settings → System Settings → Member Classes → Add `GOV` (Step 2.4) |
 | Error returns after a restart | Container restart logs the signing token out | Log in to the signing token again (keys stay; no need to recreate) |
 | Security Server owner shows **"unknown member"** | The owner member (e.g. `TL-TEST:GOV:MOH`) is not registered in the Central Server, so its name is missing from global conf | CS → Members → **Add member** (class `GOV`, the owner's code); wait ~1 min for global conf to refresh |
-| `tools/scripts/generate-anchor.sh` says HTTP 401 / can't create API key | This CS image rejects `xrd:secret` on `/api/v1` | Download the anchor from the UI (Step 2.10) |
+| `Could not find any certificates for member 'SUBSYSTEM:TL-TEST/GOV/MJ/JUSTICE'` | Client/subsystem certificate registration was attempted before the member/client certificate state was ready | Do not run full `xrdsst apply`; use `./init.sh` or the staged manual sequence from `install.sh` |
+| Security Servers page on CS shows no rows | Auth cert registration requests are not approved yet, or SS addresses never reached global configuration | Run `tools/scripts/provision-ss.sh`, then `tools/scripts/provision-mgmt.sh`; wait for global conf generation |
+| Management requests return 500 with timestamp errors | TSA was registered without its certificate, so message timestamping fails | Re-run `./init.sh` or add the Test TSA with multipart `url` and `certificate` |
+| Cross-SS calls fail although local calls work | Security Server address is `127.0.0.1` in global conf | Use the container hostname (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) as the server address |
+| `tools/scripts/generate-anchor.sh` says it cannot create an API key | The Central Server is not initialized/login-ready yet, or the UI session login failed | Run `tools/scripts/provision-cs.sh` first; verify `https://localhost:4000` accepts `xrd` / `secret` |
 | `/etc/xroad/globalconf` is empty | Generation has not succeeded yet | Fix generation first; the management service consumes it afterwards |
 
 ## Cleanup
@@ -126,8 +132,9 @@ examples/timor-leste/
 │   ├── portal/               One-Stop-Shop app (OIDC PKCE + JWKS) + Dockerfile
 │   └── simulator/            simulator.html (interactive flow)
 ├── observability/            Grafana + Prometheus + Loki overlay
-├── tools/                    sandboxctl.py · showcase.py · e2e-test.sh + scripts/ (install, provision-cs, provision-mgmt, anchor, sign, sbom)
-└── docs/                     diagram.md (Mermaid)
+├── tools/                    setup.hurl · e2e.hurl · sandboxctl.py · showcase.py
+│   └── scripts/              install · provision-cs · provision-ss · provision-mgmt · anchor · sign · sbom
+└── docs/                     diagram.md · PROVISIONING-RUNBOOK.md
 ```
 
 ## Advanced Topics & Sources
@@ -135,7 +142,7 @@ examples/timor-leste/
 - **Observability:** `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d` (Grafana `:3001`).
 - **Compliance (GovTL):** standards & gap matrix in [govtl-compliance.md](../../docs/govtl-compliance.md).
 - **SBOM / CVE:** `tools/scripts/sbom.sh` (syft + grype); CI runs the same gate plus secret scanning (`.github/workflows/ci.yml`).
-- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide — same images, credentials (`xrd`/`secret`), PIN (`123456xrd!`) and port scheme. That guide uses **3** Security Servers (`ss1`=management, `ss2`=consumer, `ss3`=provider); we use **4 per ministry** (`ss-mj`=provider+consumer, `ss-moh`=consumer, `ss-mtc`=provider, `ss-oss`=consumer/portal).
+- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`123456xrd!`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) plus the Central Server.
 - **Kubernetes:** Deploy the Security Server Sidecar per ministry. See the [Sidecar user guide](https://docs.x-road.global/Sidecar/security_server_sidecar_user_guide.html).
 - **Test CA:** `testca` (CA + OCSP + TSA in one container); replace with a real approved CA in production.
 - **Security Server Toolkit:** [xrdsst on GitHub](https://github.com/nordic-institute/X-Road-Security-Server-toolkit)

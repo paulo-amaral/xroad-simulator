@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# One-Command Setup for Timor-Leste X-Road Sandbox
-# This script initializes the entire ecosystem: starts containers, provisions the
-# Central Server, sets up Trust Services (CA/TSA), downloads the anchor,
-# configures the Security Servers, and runs the E2E declarative tests (Hurl).
+# One-command setup for the Timor-Leste X-Road sandbox.
+# Follows the official xrd-dev-stack bootstrap shape: Central Server and trust
+# first, then Security Server keys/certificates/registration, then clients/ACLs,
+# then an end-to-end verification. All provisioning uses supported REST APIs and
+# xrdsst; no direct database writes.
 
 set -euo pipefail
 
@@ -91,7 +92,7 @@ echo "  Global Configuration generation succeeded."
 log "6. Downloading Configuration Anchor..."
 tools/scripts/generate-anchor.sh
 
-log "7. Provisioning Security Servers via xrdsst (Declarative Configuration)..."
+log "7. Preparing Security Servers with xrdsst (anchor, token, TSA, clients, CSRs)..."
 log "  waiting for the Security Server admin APIs (emulated boot is slow)..."
 for ss in ss-mj ss-moh ss-mtc ss-oss; do
   until docker compose exec -T "$ss" sh -lc 'curl -ksSf -o /dev/null https://localhost:4000/' 2>/dev/null; do sleep 5; done
@@ -103,9 +104,14 @@ fi
 source .venv/bin/activate
 tools/scripts/generate-ss-api-keys.sh
 set -a; source .env; set +a
-xrdsst -c xroad/config/xrdsst-config.yaml apply
+xrdsst -c xroad/config/xrdsst-config.yaml init
+xrdsst -c xroad/config/xrdsst-config.yaml token login
+xrdsst -c xroad/config/xrdsst-config.yaml timestamp init
+xrdsst -c xroad/config/xrdsst-config.yaml client add
+xrdsst -c xroad/config/xrdsst-config.yaml token init-keys
+tools/scripts/provision-ss.sh
 
-log "7b. Management Security Server, routable addresses, registrations and ACLs (REST API)..."
+log "7b. Approving registrations, management provider, routable addresses and ACLs..."
 set -a; source .env; set +a
 tools/scripts/provision-mgmt.sh
 

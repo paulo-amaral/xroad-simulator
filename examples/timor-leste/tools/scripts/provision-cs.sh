@@ -5,7 +5,7 @@
 #
 # Covers: instance init, signing-token login, internal+external signing keys, member class GOV,
 # the 5 members, their subsystems, and the management service provider.
-# Still manual/UI or xrdsst: Test CA + TSA, and the Security Servers (use xrdsst, Step 3).
+# Still handled by companion scripts: Test CA + TSA, and the Security Server certificate dance.
 set -uo pipefail
 
 CS_URL="${CS_URL:-https://localhost:4000}"
@@ -25,7 +25,7 @@ MEMBERS=(
 )
 # member code : subsystem code
 SUBSYSTEMS=( "01:MANAGEMENT" "MJ:JUSTICE" "MOH:HEALTH" "MTC:DNTT" "OSS:PORTAL" )
-MGMT_PROVIDER="${INSTANCE}:GOV:01:MANAGEMENT"
+MGMT_PROVIDER="SUBSYSTEM:${INSTANCE}:GOV:01:MANAGEMENT"
 
 log()  { printf '\033[1;34m[provision-cs]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[provision-cs]\033[0m %s\n' "$*" >&2; }

@@ -5,7 +5,7 @@ Standard library only, kept in Python to match the X-Road provisioning tooling (
 Run from examples/timor-leste:  ./sandboxctl.py <command>
 """
 import argparse
-import base64
+import http.cookiejar
 import json
 import os
 import re
@@ -103,22 +103,37 @@ def cmd_identity(args):
 
 
 def create_api_key():
-    # Create a management API key via admin basic auth (XROAD_ADMIN, default xrd:secret).
+    # Create a management API key through the same session login used by the admin UI.
     admin = os.environ.get("XROAD_ADMIN", "xrd:secret")
     user, _, pw = admin.partition(":")
     roles = json.dumps(["XROAD_SYSTEM_ADMINISTRATOR", "XROAD_REGISTRATION_OFFICER", "XROAD_SECURITY_OFFICER"]).encode()
+    cookiejar = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPSHandler(context=_CTX),
+        urllib.request.HTTPCookieProcessor(cookiejar),
+    )
+    opener.open(CS_URL + "/", timeout=15).read()
+    csrf = ""
+    for cookie in cookiejar:
+        if cookie.name == "XSRF-TOKEN":
+            csrf = cookie.value
+    data = urllib.parse.urlencode({"username": user, "password": pw}).encode()
+    login = urllib.request.Request(CS_URL + "/login", data=data, method="POST",
+                                   headers={"X-XSRF-TOKEN": csrf})
+    opener.open(login, timeout=15).read()
+    for cookie in cookiejar:
+        if cookie.name == "XSRF-TOKEN":
+            csrf = cookie.value
     req = urllib.request.Request(CS_URL + "/api/v1/api-keys", data=roles, method="POST",
-                                 headers={"Content-Type": "application/json"})
-    basic = base64.b64encode(f"{user}:{pw}".encode()).decode()
-    req.add_header("Authorization", "Basic " + basic)
-    with urllib.request.urlopen(req, timeout=15, context=_CTX) as r:
+                                 headers={"Content-Type": "application/json", "X-XSRF-TOKEN": csrf})
+    with opener.open(req, timeout=15) as r:
         return json.loads(r.read())["key"]
 
 
 def cmd_anchor(args):
     key = os.environ.get("CS_API_KEY")
     if not key:
-        log("no CS_API_KEY set; creating a management API key via basic auth")
+        log("no CS_API_KEY set; creating a management API key via UI session")
         try:
             key = create_api_key()
         except Exception as e:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Bring up the Timor-Leste X-Road sandbox (Central Server, Test CA, three ministry
-# Security Servers, mock provider). Test/dev only. Idempotent: safe to re-run.
+# Bring up the Timor-Leste X-Road sandbox (Central Server, Test CA, four
+# Security Servers, mock providers). Test/dev only. Idempotent: safe to re-run.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -100,12 +100,24 @@ Access (login xrd / secret):
   e-KYC mock       http://localhost:9081/verify
   One-Stop-Shop    http://localhost:8000     <- citizen portal
 
-Next: follow Step 2 onward in the example README, then provision from the example root:
+Next: preferred full bootstrap from the example root:
+  cd ${SANDBOX_DIR}
+  ./init.sh
+
+Manual bootstrap, if debugging one phase at a time:
   cd ${SANDBOX_DIR}
   source .venv/bin/activate
+  tools/scripts/provision-cs.sh
+  tools/scripts/generate-anchor.sh
   tools/scripts/generate-ss-api-keys.sh
   set -a; source .env; set +a
-  xrdsst -c xroad/config/xrdsst-config.yaml apply
+  xrdsst -c xroad/config/xrdsst-config.yaml init
+  xrdsst -c xroad/config/xrdsst-config.yaml token login
+  xrdsst -c xroad/config/xrdsst-config.yaml timestamp init
+  xrdsst -c xroad/config/xrdsst-config.yaml client add
+  xrdsst -c xroad/config/xrdsst-config.yaml token init-keys
+  tools/scripts/provision-ss.sh
+  tools/scripts/provision-mgmt.sh
 
 Tear down with: ${SCRIPT_DIR}/down.sh
 EOF
