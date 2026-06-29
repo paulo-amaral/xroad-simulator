@@ -126,7 +126,7 @@ examples/timor-leste/
 │   ├── portal/               One-Stop-Shop app (OIDC PKCE + JWKS) + Dockerfile
 │   └── simulator/            simulator.html (interactive flow)
 ├── observability/            Grafana + Prometheus + Loki overlay
-├── tools/                    sandboxctl.py + scripts/ (install, init-cs, anchor, sign, sbom)
+├── tools/                    sandboxctl.py · showcase.py · e2e-test.sh + scripts/ (install, provision-cs, provision-mgmt, anchor, sign, sbom)
 └── docs/                     diagram.md (Mermaid)
 ```
 
