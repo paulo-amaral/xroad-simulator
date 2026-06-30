@@ -142,9 +142,6 @@ log "7b. Approving registrations, management provider, routable addresses and AC
 set -a; source .env; set +a
 tools/scripts/provision-mgmt.sh
 
-log "7c. Activating certificates (waits for OCSP and Central Server approvals)..."
-tools/scripts/activate-certs.sh
-
 log "8. Running Declarative E2E Tests via Hurl..."
 tools/e2e-test.sh
 
