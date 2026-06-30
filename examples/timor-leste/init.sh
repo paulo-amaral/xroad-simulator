@@ -47,17 +47,27 @@ docker compose exec -T testca cat /home/ca/CA/certs/tsa.cert.pem > tools/tsa.pem
 # several "Test CA" entries with the same subject DN and different keys. The Security Server matches
 # CA and TSA by issuer DN, so a stale duplicate silently breaks OCSP and timestamp verification.
 # Fingerprint the live Test CA / TSA, drop anything that does not match, and keep exactly one current.
-fp() { openssl x509 -in "$1" -outform DER 2>/dev/null | openssl dgst -sha256 -hex | awk '{print toupper($NF)}'; }
-CA_FP="$(fp tools/ca.pem)"; TSA_FP="$(fp tools/tsa.pem)"
-
-cert_hash() { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1/$2" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("certificate",{}).get("hash","").upper())'; }
-list_ids()  { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1" | python3 -c 'import json,sys;[print(x["id"]) for x in json.load(sys.stdin)]'; }
+# Compare by certificate generation time (not_before), which is unique per Test CA regeneration. The
+# certification-services API does not expose a certificate hash (only timestamping does), but both
+# expose not_before, so this is the one field we can read back from the CS for every trust service.
+cert_notbefore() { openssl x509 -in "$1" -noout -startdate 2>/dev/null | sed 's/notBefore=//' | python3 -c 'import sys,datetime as d
+try: print(int(d.datetime.strptime(sys.stdin.read().strip(),"%b %d %H:%M:%S %Y %Z").replace(tzinfo=d.timezone.utc).timestamp()))
+except Exception: print("")'; }
+svc_notbefore() { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1/$2" | python3 -c 'import sys,json,datetime as d
+o=json.load(sys.stdin); nb=o.get("not_before") or o.get("certificate",{}).get("not_before")
+try: print(int(d.datetime.strptime(nb,"%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=d.timezone.utc).timestamp()))
+except Exception: print("")'; }
+list_ids() { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1" | python3 -c 'import json,sys;[print(x["id"]) for x in json.load(sys.stdin)]'; }
+CA_NB="$(cert_notbefore tools/ca.pem)"; TSA_NB="$(cert_notbefore tools/tsa.pem)"
+# Fail-safe: never delete trust services if we cannot read the live Test CA/TSA timestamps.
+[ -n "$CA_NB" ] && [ -n "$TSA_NB" ] || { echo "  ERROR: cannot read live Test CA/TSA timestamps; aborting trust reconcile"; exit 1; }
 
 # Drop stale certification services, keep the one matching the current Test CA.
 CA_ID=""
 for id in $(list_ids certification-services); do
-    if [ "$(cert_hash certification-services "$id")" = "$CA_FP" ]; then CA_ID="$id";
-    else echo "  removing stale Test CA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/certification-services/${id}"; fi
+    sb="$(svc_notbefore certification-services "$id")"
+    if [ "$sb" = "$CA_NB" ]; then CA_ID="$id";
+    elif [ -n "$sb" ]; then echo "  removing stale Test CA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/certification-services/${id}"; fi
 done
 if [ -z "$CA_ID" ]; then
     for i in $(seq 1 30); do
@@ -83,8 +93,9 @@ fi
 # timestamping fails and every management request returns 500.
 TSA_OK=""
 for id in $(list_ids timestamping-services); do
-    if [ "$(cert_hash timestamping-services "$id")" = "$TSA_FP" ]; then TSA_OK="$id";
-    else echo "  removing stale TSA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/timestamping-services/${id}"; fi
+    sb="$(svc_notbefore timestamping-services "$id")"
+    if [ "$sb" = "$TSA_NB" ]; then TSA_OK="$id";
+    elif [ -n "$sb" ]; then echo "  removing stale TSA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/timestamping-services/${id}"; fi
 done
 if [ -z "$TSA_OK" ]; then
     for i in $(seq 1 30); do
