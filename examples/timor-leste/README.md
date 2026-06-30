@@ -91,6 +91,8 @@ from the **X-Road** zone. **Click any server node to open its admin UI.** Click 
 message flow and the zero-trust steps (eID login, ACL check, mTLS, OCSP, signing, timestamping). Mermaid
 diagrams of the same flows are in `docs/diagram.md`.
 
+![X-Road Timor-Leste service flow simulator](citizen/simulator/img/simulator-preview.png)
+
 ---
 
 ## Troubleshooting
@@ -159,7 +161,7 @@ examples/timor-leste/
 ├── citizen/                  ── CITIZEN / SIMULATED (kept out of X-Road folders) ──
 │   ├── identity/             eID (OIDC) + e-KYC: eid-config.json · ekyc.conf
 │   ├── portal/               One-Stop-Shop app (OIDC PKCE + JWKS) + Dockerfile
-│   └── simulator/            simulator.html (interactive flow)
+│   └── simulator/            simulator.html (interactive flow) · img/ (preview)
 ├── observability/            Grafana + Prometheus + Loki overlay
 ├── tools/                    setup.hurl · e2e.hurl · e2e-test.sh · sandboxctl.py · showcase.py
 │   └── scripts/              install · provision-cs · provision-ss · provision-mgmt · anchor · sbom
