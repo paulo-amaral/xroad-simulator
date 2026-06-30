@@ -20,6 +20,21 @@ MGMT_SS=ss-mtc            # operator (MTC / TIC Timor) hosts GOV/01/MANAGEMENT
 MGMT_PORT=3000
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 log(){ printf '\033[1;34m[mgmt]\033[0m %s\n' "$*"; }
+progress_sleep(){
+  local seconds=$1 label=$2 elapsed=0 width=24 filled empty
+  printf '  %s\n' "$label"
+  while [ "$elapsed" -lt "$seconds" ]; do
+    filled=$(( elapsed * width / seconds ))
+    empty=$(( width - filled ))
+    printf '\r  [%s%s] %ss/%ss' \
+      "$(printf '%*s' "$filled" '' | tr ' ' '#')" \
+      "$(printf '%*s' "$empty" '' | tr ' ' '.')" \
+      "$elapsed" "$seconds"
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+  printf '\r  [%s] %ss/%ss\n' "$(printf '%*s' "$width" '' | tr ' ' '#')" "$seconds" "$seconds"
+}
 
 for var in SS_MTC_API_KEY SS_MJ_API_KEY SS_MOH_API_KEY SS_OSS_API_KEY; do
   [ -n "${!var:-}" ] || { echo "[mgmt] missing ${var}; run tools/scripts/generate-ss-api-keys.sh and keep CS_API_KEY in .env" >&2; exit 2; }
@@ -139,7 +154,8 @@ if ! ss "$MGMT_PORT" "$SS_MTC_API_KEY" "/clients/TL-TEST:GOV:01:MANAGEMENT/servi
     -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"clientReg"},{"service_code":"clientDeletion"},{"service_code":"authCertDeletion"},{"service_code":"ownerChange"},{"service_code":"clientRename"},{"service_code":"addressChange"},{"service_code":"clientEnable"},{"service_code":"clientDisable"},{"service_code":"maintenanceModeEnable"},{"service_code":"maintenanceModeDisable"}]}'
 fi
 approve_waiting
-log "waiting for the management provider to reach the global configuration (~60s)"; sleep 60
+log "waiting for the management provider to reach the global configuration"
+progress_sleep 60 "management provider propagation"
 
 # ── 3. routable addresses (127.0.0.1 loops back to itself in containers) ───────
 log "setting each Security Server's address to its hostname"
@@ -147,7 +163,8 @@ for pair in "3000:SS_MTC_API_KEY:ss-mtc" "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_MOH
   p=${pair%%:*}; rest=${pair#*:}; kn=${rest%%:*}; addr=${rest#*:}; key=$(eval echo \$$kn)
   ss "$p" "$key" "/system/server-address" -o /dev/null -w "  ${addr} -> %{http_code}\n" -H "Content-Type: application/json" -X PUT -d "{\"address\":\"${addr}\"}"
 done
-log "waiting for the new addresses to propagate (~60s)"; sleep 60
+log "waiting for the new addresses to propagate"
+progress_sleep 60 "security server address propagation"
 
 # Client registration is sent through the Security Server management path, so each SS needs its
 # authentication certificate active before /clients/{id}/register can succeed.
@@ -162,12 +179,13 @@ for pair in "3000:SS_MTC_API_KEY:TL-TEST:GOV:MTC:DNTT" "1000:SS_MJ_API_KEY:TL-TE
     c=$(code -H "Authorization: X-Road-ApiKey token=${key}" -X PUT "https://127.0.0.1:${p}/api/v1/clients/${cid}/register")
     case "$c" in
       204|409) echo "  ${cid} -> registered/already registered ($c)"; break ;;
-      *) echo "  ${cid} -> ${c} (retry $i)"; sleep 20 ;;
+      *) echo "  ${cid} -> ${c} (retry $i)"; progress_sleep 20 "waiting before retry for ${cid}" ;;
     esac
   done
 done
 approve_waiting
-log "waiting for the registrations to propagate (~60s)"; sleep 60
+log "waiting for the registrations to propagate"
+progress_sleep 60 "subsystem registration propagation"
 
 # ── 5. service access rights for the One-Stop-Shop consumer ───────────────────
 log "publishing mock provider APIs"

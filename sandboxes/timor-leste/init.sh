@@ -8,6 +8,39 @@
 set -euo pipefail
 
 log() { printf '\n\033[1;32m[setup]\033[0m %s\n' "$*"; }
+progress_line() {
+    local elapsed=$1 total=$2 label=$3 width=24 filled empty
+    [ "$elapsed" -gt "$total" ] && elapsed=$total
+    filled=$(( elapsed * width / total ))
+    empty=$(( width - filled ))
+    printf '\r  [%s%s] %ss/%ss %s' \
+        "$(printf '%*s' "$filled" '' | tr ' ' '#')" \
+        "$(printf '%*s' "$empty" '' | tr ' ' '.')" \
+        "$elapsed" "$total" "$label"
+}
+progress_done() {
+    local label=$1 width=24
+    printf '\r  [%s] done %s\n' "$(printf '%*s' "$width" '' | tr ' ' '#')" "$label"
+}
+wait_for_global_conf() {
+    local label=$1 elapsed=0 interval=5 expected=60
+    log "$label"
+    while ! docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_status 2>/dev/null' | grep -q '"success":true'; do
+        sleep "$interval"
+        elapsed=$((elapsed + interval))
+        progress_line "$elapsed" "$expected" "global configuration"
+    done
+    progress_done "global configuration"
+}
+wait_for_ss_admin() {
+    local ss=$1 elapsed=0 interval=5 expected=120
+    while ! docker compose exec -T "$ss" sh -lc 'curl -ksSf -o /dev/null https://localhost:4000/' 2>/dev/null; do
+        sleep "$interval"
+        elapsed=$((elapsed + interval))
+        progress_line "$elapsed" "$expected" "$ss admin API"
+    done
+    progress_done "$ss admin API"
+}
 
 log "1. Checking prerequisites and starting Docker ecosystem..."
 tools/scripts/install.sh
@@ -37,8 +70,7 @@ log "4. Reconciling Trust Services (Test CA & TSA) to the current Test CA..."
 AUTH="Authorization: X-Road-ApiKey token=$CS_API_KEY"
 # The CA/TSA add returns 400 until the Central Server has generated its global configuration at
 # least once (instance initialised + signing keys settled). Wait for the first success.
-log "  waiting for the first global configuration generation (CA add 400s before it)..."
-until docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_status 2>/dev/null' | grep -q '"success":true'; do sleep 5; done
+wait_for_global_conf "  waiting for the first global configuration generation (CA add 400s before it)..."
 docker compose exec -T testca cat /home/ca/CA/certs/ca.cert.pem > tools/ca.pem
 docker compose exec -T testca cat /home/ca/CA/certs/tsa.cert.pem > tools/tsa.pem
 
@@ -110,11 +142,7 @@ echo "  Test TSA reconciled"
 
 rm -f tools/ca.pem tools/tsa.pem
 
-log "5. Waiting for Global Configuration to generate..."
-until docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_status 2>/dev/null' | grep -q '"success":true'; do
-    sleep 5
-done
-echo "  Global Configuration generation succeeded."
+wait_for_global_conf "5. Waiting for Global Configuration to generate..."
 
 log "6. Downloading Configuration Anchor..."
 tools/scripts/generate-anchor.sh
@@ -122,8 +150,7 @@ tools/scripts/generate-anchor.sh
 log "7. Preparing Security Servers with xrdsst (anchor, token, TSA, clients, CSRs)..."
 log "  waiting for the Security Server admin APIs (emulated boot is slow)..."
 for ss in ss-mj ss-moh ss-mtc ss-oss; do
-  until docker compose exec -T "$ss" sh -lc 'curl -ksSf -o /dev/null https://localhost:4000/' 2>/dev/null; do sleep 5; done
-  echo "  $ss ready"
+  wait_for_ss_admin "$ss"
 done
 if [ ! -f .env ]; then
   cp ../../.env.example .env
