@@ -91,7 +91,7 @@ from the **X-Road** zone. **Click any server node to open its admin UI.** Click 
 message flow and the zero-trust steps (eID login, ACL check, mTLS, OCSP, signing, timestamping). Mermaid
 diagrams of the same flows are in `docs/diagram.md`.
 
-![X-Road Timor-Leste service flow simulator](citizen/simulator/img/simulator-preview.png)
+![X-Road Timor-Leste service flow simulator](citizen/simulator/img/simulator-preview.webp)
 
 ---
 
