@@ -149,6 +149,11 @@ for pair in "3000:SS_MTC_API_KEY:ss-mtc" "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_MOH
 done
 log "waiting for the new addresses to propagate (~60s)"; sleep 60
 
+# Client registration is sent through the Security Server management path, so each SS needs its
+# authentication certificate active before /clients/{id}/register can succeed.
+log "activating registered certificates before subsystem registration"
+tools/scripts/activate-certs.sh
+
 # ── 4. register the provider/consumer subsystems + approve ────────────────────
 log "registering subsystems (retry until the global conf carries the management provider)"
 for pair in "3000:SS_MTC_API_KEY:TL-TEST:GOV:MTC:DNTT" "1000:SS_MJ_API_KEY:TL-TEST:GOV:MJ:JUSTICE" "2000:SS_MOH_API_KEY:TL-TEST:GOV:MOH:HEALTH" "5000:SS_OSS_API_KEY:TL-TEST:GOV:OSS:PORTAL"; do
@@ -173,6 +178,12 @@ log "granting OSS/PORTAL access to the published services"
 ss 1000 "$SS_MJ_API_KEY"  "/clients/TL-TEST:GOV:MJ:JUSTICE/service-clients/TL-TEST:GOV:OSS:PORTAL/access-rights" -o /dev/null -w "  birth-certificate -> %{http_code}\n" \
   -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"birth-certificate"}]}'
 ss 3000 "$SS_MTC_API_KEY" "/clients/TL-TEST:GOV:MTC:DNTT/service-clients/TL-TEST:GOV:OSS:PORTAL/access-rights" -o /dev/null -w "  driver-license -> %{http_code}\n" \
+  -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"driver-license"}]}'
+
+log "granting MOH/HEALTH access to the published services"
+ss 1000 "$SS_MJ_API_KEY"  "/clients/TL-TEST:GOV:MJ:JUSTICE/service-clients/TL-TEST:GOV:MOH:HEALTH/access-rights" -o /dev/null -w "  birth-certificate health -> %{http_code}\n" \
+  -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"birth-certificate"}]}'
+ss 3000 "$SS_MTC_API_KEY" "/clients/TL-TEST:GOV:MTC:DNTT/service-clients/TL-TEST:GOV:MOH:HEALTH/access-rights" -o /dev/null -w "  driver-license health -> %{http_code}\n" \
   -H "Content-Type: application/json" -X POST -d '{"items":[{"service_code":"driver-license"}]}'
 
 log "done. Verify with: python3 tools/showcase.py"
