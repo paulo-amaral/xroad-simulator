@@ -113,6 +113,28 @@ Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 | `tools/scripts/generate-anchor.sh` says it cannot create an API key | The Central Server is not initialized/login-ready yet, or the UI session login failed | Run `tools/scripts/provision-cs.sh` first; verify `https://localhost:4000` accepts `xrd` / `secret` |
 | `/etc/xroad/globalconf` is empty | Generation has not succeeded yet | Fix generation first; the management service consumes it afterwards |
 
+## Persistence & day-to-day operation
+
+The Central Server and the Test CA keep their state in Docker volumes, so they survive both restarts
+and re-creation. The four Security Servers store their keys, certificates and `serverconf` in the
+container layer (ephemeral, matching the upstream dev stack): that survives a **restart** but not a
+**re-creation**. The signing token logs back in automatically on every boot (`XROAD_TOKEN_PIN`), so a
+restart needs no manual step.
+
+| Action | Central Server / Test CA | Security Servers |
+|---|---|---|
+| `docker compose stop` then `start`, `docker restart`, host reboot, Docker Desktop restart | kept | **kept** (token auto-logs in) |
+| `docker compose down` then `up` | kept (volumes) | **wiped** — re-run provisioning |
+| `docker compose up --build` / `--force-recreate` | kept | **wiped** |
+| `tools/scripts/down.sh --wipe`, `docker compose down -v`, `docker volume rm` | **wiped** | **wiped** |
+
+Practical rule: to keep a provisioned environment, use `docker compose stop` / `start` (or
+`docker restart`), not `docker compose down`. Never wipe the `testca-home` volume on its own — the
+Test CA would regenerate with a new key while the Central Server keeps the old one, leaving a stale
+duplicate CA that breaks OCSP and timestamp verification (both are matched by issuer DN). If you must
+re-create the Security Servers, re-run the provisioning; `init.sh` reconciles the trust services to
+the current Test CA.
+
 ## Cleanup
 To stop the sandbox and keep X-Road state:
 ```bash
@@ -140,7 +162,7 @@ examples/timor-leste/
 │   └── simulator/            simulator.html (interactive flow)
 ├── observability/            Grafana + Prometheus + Loki overlay
 ├── tools/                    setup.hurl · e2e.hurl · e2e-test.sh · sandboxctl.py · showcase.py
-│   └── scripts/              install · provision-cs · provision-ss · provision-mgmt · anchor · sign · sbom
+│   └── scripts/              install · provision-cs · provision-ss · provision-mgmt · anchor · sbom
 └── docs/                     diagram.md · PROVISIONING-RUNBOOK.md
 ```
 

@@ -30,10 +30,6 @@ security_server:
       access:
       - TL-TEST/GOV/OSS/PORTAL
       - TL-TEST/GOV/MOH/HEALTH
-  certificates:
-  - ./xroad/certs/ss-mj/sign-72716E2B0A5CB5BAA4268350C73A9215CD1A7D20.crt
-  - ./xroad/certs/ss-mj/sign-47062846051725BDBED37B8266E62AED9823855D.crt
-  - ./xroad/certs/ss-mj/auth-2F9FBD0F2876D637CC838F6B41269BED3013F0A0.crt
 - name: ss-moh
   url: https://127.0.0.1:2000/api/v1
   api_key_url: https://127.0.0.1:2000/api/v1/api-keys
@@ -54,9 +50,6 @@ security_server:
     member_name: Ministry of Health
     subsystem_code: HEALTH
     connection_type: HTTPS_NO_AUTH
-  certificates:
-  - ./xroad/certs/ss-moh/sign-445349EE81CFB8B8618F17801B621568E63A9FB1.crt
-  - ./xroad/certs/ss-moh/auth-C13E0396097CBF6E169B7E579FD9490E174D53BE.crt
 - name: ss-mtc
   url: https://127.0.0.1:3000/api/v1
   api_key_url: https://127.0.0.1:3000/api/v1/api-keys
@@ -85,9 +78,6 @@ security_server:
       - TL-TEST/GOV/OSS/PORTAL
       - TL-TEST/GOV/MJ/JUSTICE
       - TL-TEST/GOV/MOH/HEALTH
-  certificates:
-  - ./xroad/certs/ss-mtc/sign-74F1173C6C153068F2A561F37E7DCAE7A2294FAA.crt
-  - ./xroad/certs/ss-mtc/auth-5C3C610AFBD150380209E14A240BBD94AB1916D9.crt
 - name: ss-oss
   url: https://127.0.0.1:5000/api/v1
   api_key_url: https://127.0.0.1:5000/api/v1/api-keys
@@ -108,7 +98,3 @@ security_server:
     member_name: Balkaun Uniku
     subsystem_code: PORTAL
     connection_type: HTTPS_NO_AUTH
-  certificates:
-  - ./xroad/certs/ss-oss/sign-81884F72844BBFF6316034FBA19159FA2DCAC7B7.crt
-  - ./xroad/certs/ss-oss/auth-A0F96F6E4CC37C358248539504E8F903C088D065.crt
-  - ./xroad/certs/ss-oss/auth-9D3257EB4C380089D1FF0A690897CECF94A0B660.crt

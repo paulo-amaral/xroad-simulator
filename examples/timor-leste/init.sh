@@ -33,7 +33,7 @@ export CS_API_KEY
 log "3. Provisioning Central Server (Instance, Tokens, Members)..."
 tools/scripts/provision-cs.sh
 
-log "4. Provisioning Trust Services (Test CA & TSA)..."
+log "4. Reconciling Trust Services (Test CA & TSA) to the current Test CA..."
 AUTH="Authorization: X-Road-ApiKey token=$CS_API_KEY"
 # The CA/TSA add returns 400 until the Central Server has generated its global configuration at
 # least once (instance initialised + signing keys settled). Wait for the first success.
@@ -42,44 +42,60 @@ until docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_stat
 docker compose exec -T testca cat /home/ca/CA/certs/ca.cert.pem > tools/ca.pem
 docker compose exec -T testca cat /home/ca/CA/certs/tsa.cert.pem > tools/tsa.pem
 
-# Add the CA as a certification service on the Central Server (CS path is /certification-services,
-# not /certificate-authorities which is the Security Server path). The profile is the FI *Provider*
-# class to match the xrdsst FI profile. The CS backend can 400 right after init even though the UI
-# responds, so retry until it accepts (201) or it already exists (409). Fatal if it never does —
-# the Security Servers cannot validate certificates without the CA.
-for i in $(seq 1 30); do
-    HTTP_CODE=$(curl -ksS -o /tmp/ca-resp.json -w "%{http_code}" -H "$AUTH" \
-        -F "certificate=@tools/ca.pem;type=application/octet-stream" \
-        -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.FiVRKCertificateProfileInfoProvider" \
-        -F "tls_auth=false" \
-        -X POST "${CS_URL}/api/v1/certification-services")
-    case "$HTTP_CODE" in 201|409) break;; esac
-    sleep 6
-done
-case "$HTTP_CODE" in 201|409) echo "  Test CA configured (HTTP $HTTP_CODE)";; *) echo "  ERROR: Test CA add failed (HTTP $HTTP_CODE): $(cat /tmp/ca-resp.json 2>/dev/null)"; exit 1;; esac
+# Reconcile, do not blindly append. The Test CA regenerates its key whenever the testca-home volume
+# is wiped, but the Central Server persists its trust list, so repeated runs used to accumulate
+# several "Test CA" entries with the same subject DN and different keys. The Security Server matches
+# CA and TSA by issuer DN, so a stale duplicate silently breaks OCSP and timestamp verification.
+# Fingerprint the live Test CA / TSA, drop anything that does not match, and keep exactly one current.
+fp() { openssl x509 -in "$1" -outform DER 2>/dev/null | openssl dgst -sha256 -hex | awk '{print toupper($NF)}'; }
+CA_FP="$(fp tools/ca.pem)"; TSA_FP="$(fp tools/tsa.pem)"
 
-# Find the CA id and add the OCSP responder (multipart, not JSON).
-CA_ID=$(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/certification-services" | python3 -c 'import json,sys
-d=json.load(sys.stdin)
-print(d[0]["id"] if isinstance(d,list) and d else "")')
-if [ -n "$CA_ID" ]; then
-    HTTP_CODE=$(curl -ksS -o /dev/null -w "%{http_code}" -H "$AUTH" \
-        -F "url=http://testca:8888" \
-        -X POST "${CS_URL}/api/v1/certification-services/${CA_ID}/ocsp-responders")
-    echo "  OCSP Responder configured (HTTP $HTTP_CODE)"
+cert_hash() { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1/$2" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("certificate",{}).get("hash","").upper())'; }
+list_ids()  { curl -ksS -H "$AUTH" "${CS_URL}/api/v1/$1" | python3 -c 'import json,sys;[print(x["id"]) for x in json.load(sys.stdin)]'; }
+
+# Drop stale certification services, keep the one matching the current Test CA.
+CA_ID=""
+for id in $(list_ids certification-services); do
+    if [ "$(cert_hash certification-services "$id")" = "$CA_FP" ]; then CA_ID="$id";
+    else echo "  removing stale Test CA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/certification-services/${id}"; fi
+done
+if [ -z "$CA_ID" ]; then
+    for i in $(seq 1 30); do
+        HTTP_CODE=$(curl -ksS -o /tmp/ca-resp.json -w "%{http_code}" -H "$AUTH" \
+            -F "certificate=@tools/ca.pem;type=application/octet-stream" \
+            -F "certificate_profile_info=ee.ria.xroad.common.certificateprofile.impl.FiVRKCertificateProfileInfoProvider" \
+            -F "tls_auth=false" -X POST "${CS_URL}/api/v1/certification-services")
+        case "$HTTP_CODE" in 201) break;; esac
+        sleep 6
+    done
+    [ "$HTTP_CODE" = "201" ] || { echo "  ERROR: Test CA add failed (HTTP $HTTP_CODE): $(cat /tmp/ca-resp.json 2>/dev/null)"; exit 1; }
+    CA_ID=$(python3 -c 'import json;print(json.load(open("/tmp/ca-resp.json"))["id"])')
+fi
+echo "  Test CA reconciled (id=$CA_ID)"
+
+# Ensure the OCSP responder exists on the current CA, exactly once.
+if [ -z "$(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/certification-services/${CA_ID}/ocsp-responders" | python3 -c 'import json,sys;print("y" if json.load(sys.stdin) else "")')" ]; then
+    curl -ksS -o /dev/null -H "$AUTH" -F "url=http://testca:8888" -X POST "${CS_URL}/api/v1/certification-services/${CA_ID}/ocsp-responders"
+    echo "  OCSP responder added"
 fi
 
-# TSA WITH its certificate. Without the cert, timestamping fails and every addressChange/registration
-# management request returns 500. Same transient-400 retry as the CA. Fatal if it never succeeds.
-for i in $(seq 1 30); do
-    HTTP_CODE=$(curl -ksS -o /tmp/tsa-resp.json -w "%{http_code}" -H "$AUTH" \
-        -F "certificate=@tools/tsa.pem" \
-        -F "url=http://testca:8899" \
-        -X POST "${CS_URL}/api/v1/timestamping-services")
-    case "$HTTP_CODE" in 201|409) break;; esac
-    sleep 6
+# Same reconciliation for timestamping services. The TSA must carry its certificate, or message
+# timestamping fails and every management request returns 500.
+TSA_OK=""
+for id in $(list_ids timestamping-services); do
+    if [ "$(cert_hash timestamping-services "$id")" = "$TSA_FP" ]; then TSA_OK="$id";
+    else echo "  removing stale TSA id=$id"; curl -ksS -o /dev/null -H "$AUTH" -X DELETE "${CS_URL}/api/v1/timestamping-services/${id}"; fi
 done
-case "$HTTP_CODE" in 201|409) echo "  TSA configured (HTTP $HTTP_CODE)";; *) echo "  ERROR: TSA add failed (HTTP $HTTP_CODE): $(cat /tmp/tsa-resp.json 2>/dev/null)"; exit 1;; esac
+if [ -z "$TSA_OK" ]; then
+    for i in $(seq 1 30); do
+        HTTP_CODE=$(curl -ksS -o /tmp/tsa-resp.json -w "%{http_code}" -H "$AUTH" \
+            -F "certificate=@tools/tsa.pem" -F "url=http://testca:8899" -X POST "${CS_URL}/api/v1/timestamping-services")
+        case "$HTTP_CODE" in 201) break;; esac
+        sleep 6
+    done
+    [ "$HTTP_CODE" = "201" ] || { echo "  ERROR: TSA add failed (HTTP $HTTP_CODE): $(cat /tmp/tsa-resp.json 2>/dev/null)"; exit 1; }
+fi
+echo "  Test TSA reconciled"
 
 rm -f tools/ca.pem tools/tsa.pem
 
