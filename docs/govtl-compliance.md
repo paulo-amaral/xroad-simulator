@@ -56,7 +56,7 @@ Legend: met · partial / sandbox-only · gap (action needed).
 | mTLS between systems (RFC 8705) | met | Provided by X-Road Security Servers. Dev tooling uses `-k`/skip-verify on localhost only (documented). |
 | X.509 PKI, OCSP (6960), TSA (3161) | met | Native to X-Road. Sandbox uses the Test CA; replace with FIPS 140-3 HSM + approved CA in production. |
 | TLS 1.3 / ban TLS 1.0-1.1 (RFC 8446) | partial | X-Road enforces modern TLS. Local clients now pin a **TLS 1.2 floor**; production must require 1.3. |
-| OpenAPI 3.1 for services | partial | Added specs under `examples/timor-leste/api/`. Publish them as OpenAPI service descriptions (not plain REST). |
+| OpenAPI 3.1 for services | partial | Added specs under `sandboxes/timor-leste/api/`. Publish them as OpenAPI service descriptions (not plain REST). |
 | OIDC 1.0 / OAuth 2.1 (citizen SSO) | partial | Portal integrates the eID mock. Production must use **authorization_code + PKCE (RFC 7636)**, not client_credentials. |
 | JWT BCP (RFC 8725) | gap -> partial | Portal now rejects `alg=none`; production must **verify the signature** against the IdP JWKS and allowlist algs. |
 | Algorithms: AES-256/SHA-3/RSA-4096/ECDSA P-384 | partial | Enforce in CA cert profiles and TLS cipher policy; ban MD5/SHA-1/RSA<2048. |

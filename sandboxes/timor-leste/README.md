@@ -22,7 +22,7 @@ Administrators (e.g., TIC Timor) are responsible for bringing up the infrastruct
 The entire ecosystem (starting containers, configuring the Central Server, adding Trust Services, downloading anchors, provisioning Security Servers, approving registrations, publishing services, and testing real traffic) is automated. You only need one command:
 
 ```bash
-cd examples/timor-leste
+cd sandboxes/timor-leste
 ./init.sh
 ```
 
@@ -140,7 +140,7 @@ the current Test CA.
 ## Cleanup
 To stop the sandbox and keep X-Road state:
 ```bash
-cd examples/timor-leste
+cd sandboxes/timor-leste
 tools/scripts/down.sh
 ```
 
@@ -152,7 +152,7 @@ tools/scripts/down.sh --wipe
 ## Layout
 
 ```text
-examples/timor-leste/
+sandboxes/timor-leste/
 ├── docker-compose.yml        Ecosystem (CS, Test CA, 4 Security Servers, mocks, eID/e-KYC, portal)
 ├── xroad/                    ── X-ROAD ──
 │   ├── config/               topology.yml · xrdsst-config.yaml

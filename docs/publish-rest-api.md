@@ -53,7 +53,7 @@ Response carries `X-Road-Request-Id` and `X-Road-Request-Hash`.
 ## Automating it
 
 `xrdsst` declares the service and its access grants in config (`service_descriptions` with `rest_service_code`
-or an OpenAPI URL, plus `access`). See the worked example `examples/timor-leste/xroad/config/xrdsst-config.yaml`.
+or an OpenAPI URL, plus `access`). See the worked example `sandboxes/timor-leste/xroad/config/xrdsst-config.yaml`.
 
 ## Sources
 

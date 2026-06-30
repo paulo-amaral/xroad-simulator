@@ -4,7 +4,7 @@ Three deployment targets, one shared install role:
 
 | Target | Where | How |
 |---|---|---|
-| **Docker** | local dev / demo | The runnable sandbox: [../examples/timor-leste/docker-compose.yml](../examples/timor-leste/docker-compose.yml) (`docker compose up -d`). |
+| **Docker** | local dev / demo | The runnable sandbox: [../sandboxes/timor-leste/docker-compose.yml](../sandboxes/timor-leste/docker-compose.yml) (`docker compose up -d`). |
 | **Kubernetes** | cluster / scale | Sidecar manifests in [kubernetes/](kubernetes/security-server.yaml): `kubectl apply -f kubernetes/security-server.yaml` (one StatefulSet per ministry), then provision with `xrdsst`. |
 | **Local network** | real LAN hosts | Ansible install on real systemd hosts: copy [ansible/inventory.example.ini](ansible/inventory.example.ini) to `inventory.ini`, set `xroad_simulate=false`, run the playbook. |
 

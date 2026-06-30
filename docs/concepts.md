@@ -95,5 +95,5 @@ graph TB
 - Access (consume arrows) follows the ACLs in `xroad/config/topology.yml`: `driver-license` is granted to
   `PORTAL`, `JUSTICE`, `HEALTH`; `birth-certificate` is granted to `PORTAL`, `HEALTH`.
 
-See `examples/timor-leste/xroad/config/topology.yml` for the full map and the example README Step 2b for the
+See `sandboxes/timor-leste/xroad/config/topology.yml` for the full map and the example README Step 2b for the
 UI walkthrough. Official reference: <https://docs.x-road.global/>.

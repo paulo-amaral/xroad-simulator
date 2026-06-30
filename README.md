@@ -4,7 +4,7 @@ A development sandbox and reference for building on the **X-Road data exchange l
 ecosystem (Central Server, test CA, Security Servers) running on Docker Compose / Kubernetes, plus consumer
 and provider services built test-first against it.
 
-![X-Road Timor-Leste service flow simulator](examples/timor-leste/citizen/simulator/img/simulator-preview.webp)
+![X-Road Timor-Leste service flow simulator](sandboxes/timor-leste/citizen/simulator/img/simulator-preview.webp)
 
 Development follows the guides in [docs/](docs/README.md): a mandatory pre-flight gate, test-driven
 development, zero-trust controls, and the official X-Road stack.
@@ -30,7 +30,7 @@ xroad-simulator/
 │
 ├── infra/                        INFRA — Terraform + Ansible install simulation across distros
 │
-└── examples/timor-leste/         SIMULATED — the runnable sandbox
+└── sandboxes/timor-leste/         SIMULATED — the runnable sandbox
     ├── docker-compose.yml        CS + Test CA + 4 Security Servers + mocks + eID/e-KYC + portal
     ├── xroad/                    X-Road: config/ (topology, xrdsst), api/ (OpenAPI), anchors/
     ├── citizen/                  Citizen layer: identity/ (eID+e-KYC), portal/, simulator/
@@ -39,7 +39,7 @@ xroad-simulator/
     └── docs/                     TL-specific docs: diagram.md
 ```
 
-Three concerns, separated: **`docs/`** = general X-Road knowledge, **`examples/timor-leste/`** = the
+Three concerns, separated: **`docs/`** = general X-Road knowledge, **`sandboxes/timor-leste/`** = the
 simulated sandbox, **`infra/`** = infrastructure automation.
 
 ## Trust model: the technologies X-Road relies on
@@ -103,18 +103,18 @@ Sidecars, one per member: Justice (`ss-mj`), Health (`ss-moh`), Transport/DNTT (
 One-Stop-Shop (`ss-oss`). Behind the Security Servers sit the provider mocks `mj-mock` and `dntt-mock`;
 the supporting citizen-identity mocks are `eid-mock` and `ekyc-mock` (Health consumes only, so it has no
 provider mock). Full topology, ports, and the provisioning sequence are in the
-[Timor-Leste README](examples/timor-leste/README.md); the generic sandbox pattern is in
+[Timor-Leste README](sandboxes/timor-leste/README.md); the generic sandbox pattern is in
 [sandbox.md](docs/sandbox.md).
 
 1. **Define your topology first.** Edit
-   [examples/timor-leste/xroad/config/topology.yml](examples/timor-leste/xroad/config/topology.yml): X-Road instance, member classes/codes,
+   [sandboxes/timor-leste/xroad/config/topology.yml](sandboxes/timor-leste/xroad/config/topology.yml): X-Road instance, member classes/codes,
    subsystems, and which Security Server owns each. These identifiers propagate into every request header,
    ACL, and test.
 
 2. **Start the ecosystem.**
 
    ```bash
-   cd examples/timor-leste
+   cd sandboxes/timor-leste
    tools/scripts/install.sh
    ```
 
@@ -122,7 +122,7 @@ provider mock). Full topology, ports, and the provisioning sequence are in the
    (ss-moh) / `3000` (ss-mtc) / `5000` (ss-oss).
 
 3. **Initialize the Central Server and download the anchor.** Follow Step 2 in the
-   [Timor-Leste README](examples/timor-leste/README.md). The Security Servers need
+   [Timor-Leste README](sandboxes/timor-leste/README.md). The Security Servers need
    `xroad/anchors/TL-TEST-anchor.xml` before `xrdsst` can provision them.
 
 4. **Provision declaratively.** Keep secrets in environment variables, then apply:
@@ -180,7 +180,7 @@ cd ../ansible && ansible-playbook -i inventory.ini site.yml
 
 ## Worked example: Timor-Leste (three ministries + One-Stop-Shop)
 
-[examples/timor-leste/](examples/timor-leste/README.md) joins the Ministry of Justice, the Ministry of Health,
+[sandboxes/timor-leste/](sandboxes/timor-leste/README.md) joins the Ministry of Justice, the Ministry of Health,
 and Transport/DNTT, plus a One-Stop-Shop portal, to one `TL-TEST` instance. Justice publishes a
 birth-certificate service and Transport/DNTT publishes a driver-license service; the One-Stop-Shop consumes
 both on the citizen's behalf, while Health is a consumer. It includes a full Docker Compose ecosystem
@@ -189,7 +189,7 @@ an `xrdsst` provisioning config, federation/sequence diagrams, and a walkthrough
 certificates with the sandbox Test CA when you have no Certificate Authority of your own.
 
 ```bash
-cd examples/timor-leste && docker compose up -d
+cd sandboxes/timor-leste && docker compose up -d
 ```
 
 ## Official documentation

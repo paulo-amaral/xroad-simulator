@@ -23,5 +23,5 @@ General X-Road reference, separated by concern.
 
 ## Where the rest lives
 
-- **Simulated example** (the runnable sandbox, mocks, portal, simulator): [../examples/timor-leste/](../examples/timor-leste/README.md)
+- **Simulated example** (the runnable sandbox, mocks, portal, simulator): [../sandboxes/timor-leste/](../sandboxes/timor-leste/README.md)
 - **Infra** (Terraform + Ansible install simulation across distros): [../infra/](../infra/README.md)

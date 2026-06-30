@@ -44,10 +44,10 @@ anchor/global-conf freshness budget. Tie alert thresholds to these, not to raw r
 ## Sandbox overlay
 
 A ready overlay (Prometheus + Grafana + Loki + Promtail + cAdvisor + node-exporter) sits in
-`examples/timor-leste/observability/`. Run it alongside the sandbox:
+`sandboxes/timor-leste/observability/`. Run it alongside the sandbox:
 
 ```bash
-cd examples/timor-leste
+cd sandboxes/timor-leste
 docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d
 # Grafana http://localhost:3001  ·  Prometheus http://localhost:9090
 ```

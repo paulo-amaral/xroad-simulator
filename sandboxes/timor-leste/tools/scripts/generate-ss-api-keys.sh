@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create Security Server management API keys and persist them to examples/timor-leste/.env.
+# Create Security Server management API keys and persist them to sandboxes/timor-leste/.env.
 # Uses the supported UI session flow: POST /login, then POST /api/v1/api-keys.
 set -euo pipefail
 

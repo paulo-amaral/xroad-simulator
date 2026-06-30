@@ -2,7 +2,7 @@
 """Orchestrate the Timor-Leste X-Road sandbox: up, status, identity, anchor, down.
 
 Standard library only, kept in Python to match the X-Road provisioning tooling (xrdsst).
-Run from examples/timor-leste:  ./sandboxctl.py <command>
+Run from sandboxes/timor-leste:  ./sandboxctl.py <command>
 """
 import argparse
 import http.cookiejar

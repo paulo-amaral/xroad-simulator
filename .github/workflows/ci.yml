@@ -22,7 +22,7 @@ jobs:
           sys.exit(bad)
           PY
       - name: Compile Python
-        run: python3 -m py_compile examples/timor-leste/tools/sandboxctl.py examples/timor-leste/portal/app.py
+        run: python3 -m py_compile sandboxes/timor-leste/tools/sandboxctl.py sandboxes/timor-leste/citizen/portal/app.py
 
   secrets:
     runs-on: ubuntu-latest

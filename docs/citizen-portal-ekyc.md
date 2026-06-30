@@ -64,8 +64,8 @@ so the e-KYC process orchestrates calls over X-Road to the authoritative source 
 Add the portal as another member/subsystem with its own Security Server (`ss-oss`), grant it access to the
 `driver-license` and `birth-certificate` services, and stand a mock eID/IdP + e-KYC service beside it. The
 worked example does exactly this: `ss-oss` plus `eid-mock` (OIDC) and `ekyc-mock` (verify) containers. See
-`examples/timor-leste/citizen/identity/` (eid-config.json, ekyc.conf), `examples/timor-leste/config/topology.yml`,
-the portal under `examples/timor-leste/citizen/portal/`, and the interactive map `examples/timor-leste/citizen/simulator/simulator.html`.
+`sandboxes/timor-leste/citizen/identity/` (eid-config.json, ekyc.conf), `sandboxes/timor-leste/config/topology.yml`,
+the portal under `sandboxes/timor-leste/citizen/portal/`, and the interactive map `sandboxes/timor-leste/citizen/simulator/simulator.html`.
 
 ## Sources
 

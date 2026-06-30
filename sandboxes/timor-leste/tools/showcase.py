@@ -6,7 +6,7 @@ Security Server (ss-oss :5443). For each call it prints the request, the X-Road 
 headers (Request-Id, Request-Hash), and the provider's response — proving the message
 actually transited the X-Road Security Servers. Test/dev sandbox only.
 
-Run from examples/timor-leste:  python3 tools/showcase.py
+Run from sandboxes/timor-leste:  python3 tools/showcase.py
 """
 import json
 import ssl
