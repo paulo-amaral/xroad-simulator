@@ -21,9 +21,14 @@ Timor-Leste topology:
 3. Security Servers: initialize from the anchor, log in to software tokens, add timestamping,
    add local clients, generate signing/authentication CSRs.
 4. Certificate dance: sign CSRs with the Test CA, import certificates to each Security Server,
-   register authentication certificates, and approve the Central Server management requests.
+   **activate the signing certificate** (so the member can sign), register authentication
+   certificates, and approve the Central Server management requests.
 5. Management and services: host `SUBSYSTEM:TL-TEST:GOV:01:MANAGEMENT` on `ss-mtc`, register client
-   subsystems, publish service descriptions, grant ACLs, then run Hurl/showcase verification.
+   subsystems, publish service descriptions, grant ACLs.
+6. Activate every certificate (`tools/scripts/activate-certs.sh`): certificates are imported inactive
+   and need a good OCSP response plus, for auth certs, the Central Server's approval before they reach
+   `REGISTERED`. The script polls each Security Server and activates what is ready, then run
+   Hurl/showcase verification. Skipping this leaves traffic failing although everything looks registered.
 
 Use `./init.sh` for the whole path. If debugging manually, follow the staged commands printed by
 `tools/scripts/install.sh`. Avoid a full `xrdsst ... apply` during first bootstrap because it can

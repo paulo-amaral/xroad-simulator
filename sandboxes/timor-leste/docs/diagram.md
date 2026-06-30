@@ -56,6 +56,29 @@ graph TB
   class BU,CIT,EID,EKYC,POR bu;
 ```
 
+## Provisioning (the one command, `./init.sh`)
+
+How a clean run reaches operational, including the final certificate activation that lets traffic flow.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant OP as Operator (./init.sh)
+    participant CS as Central Server
+    participant CA as Test CA (CA/OCSP/TSA)
+    participant SS as Security Servers (x4)
+    OP->>CS: init instance, members, subsystems, management provider
+    OP->>CA: read live CA/TSA certs
+    OP->>CS: reconcile trust services (drop stale, keep current CA + OCSP + TSA)
+    OP->>SS: xrdsst init/token/timestamp/client/init-keys (REST)
+    OP->>CA: sign CSRs (auth + sign)
+    OP->>SS: import certs, activate signing cert (waits for OCSP_GOOD)
+    OP->>CS: register auth certs, approve management requests
+    OP->>SS: register subsystems, publish services, grant ACLs
+    OP->>SS: activate-certs.sh (poll until every cert active)
+    OP->>SS: Hurl E2E - GET /r1/... returns 200 + X-Road-Request-Id
+```
+
 ## Citizen login (OIDC authorization_code + PKCE + JWKS)
 
 Identity is handled in the One-Stop-Shop layer, before any X-Road call.
