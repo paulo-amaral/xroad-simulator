@@ -49,7 +49,7 @@ _PIP="${SANDBOX_DIR}/.venv/bin/pip"
   "confuse~=1.3.0" "certifi>=14.05.14" "six>=1.10" \
   "python-dateutil~=2.8.1" \
   "gitpython~=3.1.11" "docker~=4.1.0" "yq~=2.11.1" \
-  "jq>=1.7.0"
+  "jq>=1.7.0" "urllib3<2"
 
 _SITE_PACKAGES="$("${SANDBOX_DIR}/.venv/bin/python" -c 'import site; print(site.getsitepackages()[0])')"
 mkdir -p "${_SITE_PACKAGES}/config"

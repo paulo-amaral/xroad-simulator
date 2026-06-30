@@ -1,7 +1,4 @@
 admin_credentials: XRDSST_ADMIN
-ssh_access:
-  user: XRDSST_SSH_USER
-  private_key: XRDSST_SSH_KEY
 security_server:
 - name: ss-mj
   url: https://127.0.0.1:1000/api/v1

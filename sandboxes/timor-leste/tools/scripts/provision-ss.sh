@@ -39,6 +39,22 @@ for entry in "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_MOH_API_KEY:ss-moh" "3000:SS_MT
     curl -fsS -F "certreq=@$TMP/$host-$t.csr" -F "type=$t" "$CA_SIGN" -o "$TMP/$host-$t.crt"
     echo "  $usage import -> $(curl -sk -m12 -o /dev/null -w '%{http_code}' -H "$H" -H 'Content-Type: application/octet-stream' --data-binary @"$TMP/$host-$t.crt" -X POST "$B/token-certificates")"
   done
+  # Activate the signing cert before registering the auth cert: the registration request is signed
+  # by the member's signing key, and the Central Server rejects it until that cert is active. Needs a
+  # good OCSP response, so retry while the Test CA + responder propagate into this server's global conf.
+  shash="$(curl -sk -m10 -H "$H" "$B/tokens/0" | python3 -c '
+import sys,json
+d=json.load(sys.stdin)
+print(next((c["certificate_details"]["hash"] for k in d.get("keys",[]) if k.get("usage")=="SIGNING"
+            for c in k.get("certificates",[]) if not c.get("active")), ""))')"
+  if [ -n "$shash" ]; then
+    for _ in $(seq 1 18); do
+      sc=$(curl -sk -m12 -o /dev/null -w '%{http_code}' -H "$H" -X PUT "$B/token-certificates/$shash/activate")
+      case "$sc" in 204|409) break;; esac
+      sleep 5
+    done
+    echo "  sign cert activate -> $sc"
+  fi
   hash="$(curl -sk -m10 -H "$H" "$B/tokens/0" | auth_hash)"
   if [ -n "$hash" ]; then
     echo "  register auth cert (address=$host) -> $(curl -sk -m12 -o /dev/null -w '%{http_code}' -H "$H" -H 'Content-Type: application/json' -X PUT "$B/token-certificates/$hash/register" -d "{\"address\":\"$host\"}")"

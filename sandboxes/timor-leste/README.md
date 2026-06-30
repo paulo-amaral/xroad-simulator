@@ -26,7 +26,7 @@ cd sandboxes/timor-leste
 ./init.sh
 ```
 
-This follows the official X-Road `xrd-dev-stack` shape: bootstrap the Central Server and trust first, initialize Security Servers, create CSRs, sign/import/register authentication certificates, approve management requests, then publish clients/services/ACLs. It uses supported REST APIs, `xrdsst`, and Hurl. It does not write directly to X-Road databases.
+This follows the official X-Road `xrd-dev-stack` shape: bootstrap the Central Server and trust first, initialize Security Servers, create CSRs, sign/import/register certificates, approve management requests, publish clients/services/ACLs, then activate every certificate once OCSP and the approvals have settled. It uses supported REST APIs, `xrdsst`, and Hurl. It does not write directly to X-Road databases.
 
 Important: do not use a full `xrdsst -c xroad/config/xrdsst-config.yaml apply` as the main bootstrap path in this sandbox. It can try client/subsystem certificate work before the Security Servers and management services have reached the required global-configuration state. `init.sh` runs the safer staged sequence instead.
 
