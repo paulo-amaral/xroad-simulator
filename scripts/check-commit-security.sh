@@ -14,7 +14,9 @@ if [ -z "$staged_files" ]; then
   exit 0
 fi
 
-printf '%s\n' "$staged_files" | grep -E '(^|/)(\.env|\.env\..*|secrets/|\.claude/|\.impeccable/)' >/dev/null 2>&1 \
+# Flag real local/private files, but allow the public .env.example template (whitelisted in .gitignore).
+printf '%s\n' "$staged_files" | grep -E '(^|/)(\.env|\.env\..*|secrets/|\.claude/|\.impeccable/)' 2>/dev/null \
+  | grep -vE '(^|/)\.env\.example$' | grep -q . \
   && say_fail "staged local/private project files"
 
 printf '%s\n' "$staged_files" | grep -E '\.(pem|key|p12|pfx|crt|cer|csr|jks|keystore)$' >/dev/null 2>&1 \
