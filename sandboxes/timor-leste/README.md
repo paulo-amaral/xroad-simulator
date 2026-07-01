@@ -74,16 +74,27 @@ curl -k -H "X-Road-Client: TL-TEST/GOV/OSS/PORTAL" \
 System-to-system also works, e.g. Justice querying DNTT through its own Security Server (port 1443).
 URL format: `<your_security_server>/r1/<provider_subsystem>/<service_code>`.
 
-### 3. Citizen Entry Point (One-Stop-Shop Portal)
-The One-Stop-Shop is a consumer information system. It authenticates the citizen with the eID via **OpenID
-Connect authorization_code + PKCE**, **verifies the ID-token signature against the IdP JWKS** (RFC 8725), runs
-**e-KYC identity verification**, then calls services on the citizen's behalf through its own Security Server
-(`ss-oss`).
+### 3. Entry Points (One-Stop-Shop Portal): two doors
+
+The One-Stop-Shop is a consumer information system with two doors:
+
+- **Citizen door — e-KYC.** Authenticates the citizen with the eID via **OpenID Connect
+  authorization_code + PKCE**, verifies the ID-token signature against the IdP JWKS (RFC 8725), then runs
+  **e-KYC** identity verification. This lets the citizen reach citizen services (birth-certificate, driver-license).
+- **Business door — eKYB.** Verifies/registers a company through **SERVE I.P.** (`TL-TEST/GOV/SERVE/REGISTRY`,
+  the eKYB service), keyed by the Timor-Leste NIF/TIN (7 digits, e.g. `1299802`).
+
+Then it calls the chosen service on the caller's behalf through its own Security Server (`ss-oss`).
 
 - Open **`http://localhost:8000`** -> **Sign in with eID** -> log in at the eID mock -> back to the portal.
-- The portal runs e-KYC (shows the verified assurance level), then lets the citizen **choose a service**
-  (birth-certificate or driver-license). The result renders the X-Road request and the
-  `X-Road-Request-Id` / `X-Road-Request-Hash` headers.
+- Pick a service; the result renders the X-Road request and the `X-Road-Request-Id` / `X-Road-Request-Hash` headers.
+
+> **e-KYC vs eKYB — do not confuse them.** **e-KYC** is a *mock identity check outside X-Road* (`ekyc-mock`
+> returns a static VERIFIED result; the portal keeps it only in the in-memory session). It is **not persisted and
+> not in any X-Road log** — it happens before any X-Road call. **eKYB** is a *real X-Road service call* to SERVE I.P.:
+> it is recorded and signed in the `messagelog` of both Security Servers (consumer `ss-oss` and provider `ss-serve`),
+> correlated by `X-Road-Request-Id`, and therefore auditable. Only X-Road service calls (birth-certificate,
+> driver-license, eKYB) reach the message log; the e-KYC/eID identity steps do not.
 
 ### 4. Interactive Flow Simulator
 Open `citizen/simulator/simulator.html`. It maps the ecosystem with the **One-Stop-Shop/identity** zone visually separated

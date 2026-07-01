@@ -38,9 +38,14 @@ services:
       XROAD_TOKEN_PIN: "Sandbox_2026"
       XROAD_ADMIN_USER: "xrd"
       XROAD_ADMIN_PASSWORD: "secret"
-    # Ephemeral, like the Security Servers: a restart preserves the container's writable layer, but a
-    # recreate/wipe starts the Central Server clean. This is what stops stale members/servers/CAs from
-    # a previous run accumulating (e.g. an old Ministry of Health lingering after it was replaced).
+    # Persistent (compose-managed) so a restart or recreate keeps members, Security Server
+    # registrations and the CS signing/TLS keys — otherwise the SSs "disappear" and the global conf
+    # signature no longer verifies ("Global configuration is expired"). `down -v` still wipes for a
+    # clean run, and init.sh reconciles stale members/servers so nothing (e.g. an old MoH) accumulates.
+    volumes:
+      - cs-etc:/etc/xroad
+      - cs-var:/var/lib/xroad
+      - cs-postgres:/var/lib/postgresql/16/main
     networks: [xroad]
     deploy:
       resources:
@@ -222,3 +227,6 @@ networks:
 
 volumes:
   testca-home:
+  cs-etc:
+  cs-var:
+  cs-postgres:

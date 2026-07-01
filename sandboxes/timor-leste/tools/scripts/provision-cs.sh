@@ -126,6 +126,23 @@ for s in "${SUBSYSTEMS[@]}"; do
   ok "$c" && log "  subsystem name GOV/${code}/${sub} ($c)" || warn "  subsystem name GOV/${code}/${sub} HTTP $c"
 done
 
+# Reconcile away stale members / security servers. The Central Server is persistent, so anything from a
+# previous topology (e.g. an old Ministry of Health after SERVE replaced it) would linger and confuse
+# the demo. Delete any security server, then any member, whose member code is not in the desired set
+# above. A member cannot be deleted while it still owns a security server, so servers go first.
+log "reconciling members/security servers to the topology"
+DESIRED=" $(printf '%s ' "${MEMBERS[@]%%:*}")"   # e.g. " 01 MJ SERVE MTC OSS "
+for sid in $(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/security-servers" | python3 -c 'import sys,json
+for s in json.load(sys.stdin): print(s.get("server_id",{}).get("encoded_id",""))' 2>/dev/null); do
+  mc=$(printf '%s' "$sid" | cut -d: -f3)
+  case "$DESIRED" in *" $mc "*) : ;; *) c=$(api DELETE "/api/v1/security-servers/${sid}"); log "  removed stale security server ${sid} ($c)" ;; esac
+done
+for mid in $(curl -ksS -H "$AUTH" "${CS_URL}/api/v1/members" | python3 -c 'import sys,json
+for m in json.load(sys.stdin): print(m.get("member_id",{}).get("encoded_id",""))' 2>/dev/null); do
+  mc=$(printf '%s' "$mid" | cut -d: -f3)
+  case "$DESIRED" in *" $mc "*) : ;; *) c=$(api DELETE "/api/v1/members/${mid}"); log "  removed stale member ${mid} ($c)" ;; esac
+done
+
 log "management service provider -> ${MGMT_PROVIDER}"
 # Fatal if this fails: without the provider set, the global configuration never generates
 # (managementService element incomplete) and init.sh hangs forever at "waiting for global conf".
