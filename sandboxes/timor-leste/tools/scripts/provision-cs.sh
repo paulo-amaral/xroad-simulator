@@ -12,7 +12,7 @@ CS_URL="${CS_URL:-https://localhost:4000}"
 COMPOSE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/docker-compose.yml"
 INSTANCE="${XROAD_INSTANCE:-TL-TEST}"
 CS_ADDRESS="${CS_ADDRESS:-cs}"
-PIN="${TOKEN_PIN:-123456xrd!}"
+PIN="${TOKEN_PIN:-Sandbox_2026}"
 TOKEN_ID="${TOKEN_ID:-0}"
 
 # member code : member name

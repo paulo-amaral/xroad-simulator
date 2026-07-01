@@ -38,7 +38,7 @@ Five containers form a complete ecosystem:
 | Security Server 3 (provider) | `niis/xroad-security-server-sidecar:7.7.0` | 3000 | 3080, 3443 |
 
 Sandbox default env (test values, public — never real): `XROAD_ADMIN_USER=xrd`, `XROAD_ADMIN_PASSWORD=secret`,
-`XROAD_TOKEN_PIN=123456xrd!`. Central Server UI defaults to `xrd` / `secret`.
+`XROAD_TOKEN_PIN=Sandbox_2026`. Central Server UI defaults to `xrd` / `secret`.
 
 ```bash
 docker compose up -d

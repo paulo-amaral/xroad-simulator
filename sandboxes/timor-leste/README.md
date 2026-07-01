@@ -173,7 +173,7 @@ sandboxes/timor-leste/
 - **Observability:** `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d` (Grafana `:3001`).
 - **Compliance (GovTL):** standards & gap matrix in [govtl-compliance.md](../../docs/govtl-compliance.md).
 - **SBOM / CVE:** `tools/scripts/sbom.sh` (syft + grype); CI runs the same gate plus secret scanning (`.github/workflows/ci.yml`).
-- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`123456xrd!`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) plus the Central Server.
+- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`Sandbox_2026`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) plus the Central Server.
 - **Kubernetes:** Deploy the Security Server Sidecar per ministry. See the [Sidecar user guide](https://docs.x-road.global/Sidecar/security_server_sidecar_user_guide.html).
 - **Test CA:** `testca` (CA + OCSP + TSA in one container); replace with a real approved CA in production.
 - **Security Server Toolkit:** [xrdsst on GitHub](https://github.com/nordic-institute/X-Road-Security-Server-toolkit)

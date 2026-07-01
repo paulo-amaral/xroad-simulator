@@ -22,7 +22,7 @@ metadata:
   namespace: xroad
 type: Opaque
 stringData:
-  XROAD_TOKEN_PIN: "123456xrd!"        # sandbox PIN; use a sealed/external secret in production
+  XROAD_TOKEN_PIN: "Sandbox_2026"        # sandbox PIN; use a sealed/external secret in production
   XROAD_ADMIN_USER: "xrd"
   XROAD_ADMIN_PASSWORD: "secret"
 ---

@@ -3,7 +3,7 @@
 name: xroad-tl-sandbox
 
 x-ss-env: &ss-env
-  XROAD_TOKEN_PIN: "123456xrd!"
+  XROAD_TOKEN_PIN: "Sandbox_2026"
   XROAD_ADMIN_USER: "xrd"
   XROAD_ADMIN_PASSWORD: "secret"
   XROAD_LOG_LEVEL: "INFO"
@@ -35,7 +35,7 @@ services:
     ports:
       - "4000:4000"   # Central Server admin UI
     environment:
-      XROAD_TOKEN_PIN: "123456xrd!"
+      XROAD_TOKEN_PIN: "Sandbox_2026"
       XROAD_ADMIN_USER: "xrd"
       XROAD_ADMIN_PASSWORD: "secret"
     volumes:
