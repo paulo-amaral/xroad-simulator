@@ -17,6 +17,7 @@ BASE = "https://localhost:5443/r1"  # ss-oss information-system access point (ho
 CALLS = [
     ("Driver License  (MTC / DNTT)", "TL-TEST/GOV/MTC/DNTT/driver-license/v1/licenses/TL-12345"),
     ("Birth Certificate (MJ / Justice)", "TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1/certificates/TL-67890"),
+    ("Business eKYB     (SERVE I.P.)", "TL-TEST/GOV/SERVE/REGISTRY/eKYB/v1/companies/1299802"),
 ]
 
 # Self-signed sandbox certs on the Security Server (test/dev only).

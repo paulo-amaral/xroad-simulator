@@ -15,7 +15,7 @@ paths:
     get:
       summary: Verify basic company information
       parameters:
-        - { name: brn, in: path, required: true, schema: { type: string }, description: Business registration number }
+        - { name: brn, in: path, required: true, schema: { type: string }, example: "1299802", description: "Business identifier — the Timor-Leste NIF / TIN (7-digit tax identification number, e.g. 1299802)" }
       responses:
         "200":
           description: Company record

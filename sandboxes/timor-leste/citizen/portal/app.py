@@ -60,7 +60,7 @@ SERVICES = [
      "service": "TL-TEST/GOV/MTC/DNTT/driver-license/v1", "resource": "licenses/TL-12345",
      "mock": "http://dntt-mock:8080"},
     {"title": "Business Registration (eKYB)", "abbr": "KB", "kind": "business",
-     "service": "TL-TEST/GOV/SERVE/REGISTRY/eKYB/v1", "resource": "companies/TL-BR-2026-004512",
+     "service": "TL-TEST/GOV/SERVE/REGISTRY/eKYB/v1", "resource": "companies/1299802",
      "mock": "http://serve-mock:8080"},
 ]
 

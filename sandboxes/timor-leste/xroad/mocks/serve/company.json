@@ -1,5 +1,6 @@
 {
-  "business_registration_number": "TL-BR-2026-004512",
+  "business_registration_number": "1299802",
+  "nif": "1299802",
   "company_name": "Timor Agro Comercio, Lda",
   "company_name_local": "Timor Agro Comercio, Lda",
   "company_type": "PRIVATE_LIMITED_COMPANY",
@@ -8,7 +9,7 @@
   "registry": "SERVE I.P.",
   "supervising_ministry": "MCAE",
   "tin": {
-    "tax_identification_number": "1002-004512-TL",
+    "tax_identification_number": "1299802",
     "status": "VALID",
     "vat_registered": true
   },

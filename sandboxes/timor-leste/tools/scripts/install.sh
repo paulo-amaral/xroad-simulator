@@ -77,7 +77,9 @@ log "Pulling images (test/dev only)"
 docker compose -f "${COMPOSE_FILE}" pull
 
 log "Starting all services (Docker Compose will natively wait for healthchecks)"
-docker compose -f "${COMPOSE_FILE}" up -d
+# --build so locally-built images (the One-Stop-Shop portal) pick up code changes on every run;
+# without it, `up -d` reuses a stale portal image and new services/UI never appear.
+docker compose -f "${COMPOSE_FILE}" up -d --build
 
 log "Ecosystem is up:"
 docker compose -f "${COMPOSE_FILE}" ps
