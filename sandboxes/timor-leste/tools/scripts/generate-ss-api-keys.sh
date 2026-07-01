@@ -53,7 +53,7 @@ create_key() {
 [ -f "${ENV_FILE}" ] || cp "${SANDBOX_DIR}/../../.env.example" "${ENV_FILE}"
 
 create_key ss-mj SS_MJ_API_KEY
-create_key ss-moh SS_MOH_API_KEY
+create_key ss-serve SS_SERVE_API_KEY
 create_key ss-mtc SS_MTC_API_KEY
 create_key ss-oss SS_OSS_API_KEY
 

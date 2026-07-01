@@ -75,6 +75,22 @@ scope. The target is a local sandbox: Terraform builds throwaway systemd contain
 Security Server package on them. A cloud module layer would be premature abstraction without a real environment
 to justify it. Revisit only if a hosted, multi-environment deployment becomes a goal.
 
+## High availability (production reference)
+
+This sandbox runs a single Security Server per member for clarity; it is a functional demo, not an HA
+setup. In production, X-Road Security Servers are made highly available by running several nodes in an
+active-active cluster behind an external load balancer with a replicated database. Treat the **official
+X-Road documentation as the authority**:
+
+- X-Road external load balancer installation guide (official):
+  <https://docs.x-road.global/Manuals/LoadBalancing/x-road_external_load_balancer_installation_guide.html>
+
+A public real-world deployment of the same pattern is CamDX (Cambodia). Its install notes are a useful
+**reference example only** — not a specification, and no CamDX endpoints or domains are used here:
+
+- CamDX HA Security Server with external load balancer:
+  <https://github.com/Techo-Startup-Center/CamDX-Documents/blob/main/high_availability_security_server_installation_with_external_load_balancer.md>
+
 ## Sources
 
 - Security Server installation guide (repos, ports, debconf): https://docs.x-road.global/Manuals/ig-ss_x-road_v6_security_server_installation_guide.html

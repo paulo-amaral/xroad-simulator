@@ -19,7 +19,7 @@ TOKEN_ID="${TOKEN_ID:-0}"
 MEMBERS=(
   "01:Government of Timor-Leste"
   "MJ:Ministry of Justice"
-  "MOH:Ministry of Health"
+  "SERVE:SERVE I.P."
   "MTC:Ministry of Transport and Communications"
   "OSS:Balkaun Uniku"
 )
@@ -27,11 +27,13 @@ MEMBERS=(
 SUBSYSTEMS=(
   "01|MANAGEMENT|X-Road Management Services"
   "MJ|JUSTICE|Civil Registry Services"
-  "MOH|HEALTH|National Health Services"
+  "SERVE|REGISTRY|SERVE I.P. Business Registry (eKYB)"
   "MTC|DNTT|Land Transport and Driver Licensing Services"
   "OSS|PORTAL|One-Stop-Shop Citizen Services Portal"
 )
-MGMT_PROVIDER="SUBSYSTEM:${INSTANCE}:GOV:01:MANAGEMENT"
+# The management-services PATCH wants the plain subsystem id WITHOUT the "SUBSYSTEM:" prefix
+# (the API rejects the prefixed form with invalid_service_provider_id, then stores/returns it prefixed).
+MGMT_PROVIDER="${INSTANCE}:GOV:01:MANAGEMENT"
 
 log()  { printf '\033[1;34m[provision-cs]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[provision-cs]\033[0m %s\n' "$*" >&2; }
@@ -125,7 +127,10 @@ for s in "${SUBSYSTEMS[@]}"; do
 done
 
 log "management service provider -> ${MGMT_PROVIDER}"
-c=$(api PATCH /api/v1/management-services-configuration "{\"service_provider_id\":\"${MGMT_PROVIDER}\"}"); ok "$c" && log "  set ($c)" || warn "  mgmt provider HTTP $c (set it in the UI if this failed)"
+# Fatal if this fails: without the provider set, the global configuration never generates
+# (managementService element incomplete) and init.sh hangs forever at "waiting for global conf".
+c=$(api PATCH /api/v1/management-services-configuration "{\"service_provider_id\":\"${MGMT_PROVIDER}\"}")
+ok "$c" && log "  set ($c)" || { warn "management service provider not set (HTTP $c) — global conf cannot generate"; exit 1; }
 
 log "done. Verify generation:"
 log "  docker compose exec -T cs sh -lc 'cat /var/log/xroad/.global_conf_gen_status'   # expect success:true"

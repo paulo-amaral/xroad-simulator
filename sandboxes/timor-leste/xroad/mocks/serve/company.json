@@ -1,0 +1,34 @@
+{
+  "business_registration_number": "TL-BR-2026-004512",
+  "company_name": "Timor Agro Comercio, Lda",
+  "company_name_local": "Timor Agro Comercio, Lda",
+  "company_type": "PRIVATE_LIMITED_COMPANY",
+  "status": "ACTIVE",
+  "registered_at": "2021-03-14",
+  "registry": "SERVE I.P.",
+  "supervising_ministry": "MCAE",
+  "tin": {
+    "tax_identification_number": "1002-004512-TL",
+    "status": "VALID",
+    "vat_registered": true
+  },
+  "registered_address": {
+    "municipality": "Dili",
+    "administrative_post": "Cristo Rei",
+    "line": "Rua de Nicolau Lobato"
+  },
+  "directors": [
+    {"name": "Director A", "role": "MANAGING_DIRECTOR", "nationality": "TL"},
+    {"name": "Director B", "role": "DIRECTOR", "nationality": "TL"}
+  ],
+  "enterprise_opening_announcement": {
+    "announced": true,
+    "gazette_reference": "JR-2021-0879",
+    "announced_at": "2021-03-20"
+  },
+  "verification": {
+    "source": "SERVE I.P. business register",
+    "verified": true,
+    "as_of": "2026-06-30"
+  }
+}

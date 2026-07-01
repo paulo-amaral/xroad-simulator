@@ -18,7 +18,7 @@ scrape_configs:
   # Enable once the Security Servers expose JMX with a jmx_exporter sidecar.
   # - job_name: xroad-security-servers
   #   static_configs:
-  #     - targets: ["ss-mj:9404", "ss-moh:9404", "ss-mtc:9404", "ss-oss:9404"]
+  #     - targets: ["ss-mj:9404", "ss-serve:9404", "ss-mtc:9404", "ss-oss:9404"]
 
   # Enable once postgres-exporter points at each ministry / serverconf / messagelog DB.
   # - job_name: postgres

@@ -26,27 +26,32 @@ security_server:
       rest_service_code: birth-certificate
       access:
       - TL-TEST/GOV/OSS/PORTAL
-      - TL-TEST/GOV/MOH/HEALTH
-- name: ss-moh
+- name: ss-serve
   url: https://127.0.0.1:2000/api/v1
   api_key_url: https://127.0.0.1:2000/api/v1/api-keys
-  api_key: SS_MOH_API_KEY
+  api_key: SS_SERVE_API_KEY
   configuration_anchor: ./xroad/anchors/TL-TEST-anchor.xml
   software_token_id: 0
   software_token_pin: TOKEN_PIN
   owner_member_class: GOV
-  owner_member_code: MOH
+  owner_member_code: SERVE
   owner_dn_country: TL
-  owner_dn_org: Ministry of Health
+  owner_dn_org: SERVE I.P.
   profile: FI
-  security_server_code: ss-moh
-  fqdn: ss-moh
+  security_server_code: ss-serve
+  fqdn: ss-serve
   clients:
   - member_class: GOV
-    member_code: MOH
-    member_name: Ministry of Health
-    subsystem_code: HEALTH
+    member_code: SERVE
+    member_name: SERVE I.P.
+    subsystem_code: REGISTRY
     connection_type: HTTPS_NO_AUTH
+    service_descriptions:
+    - url: http://serve-mock:8080
+      type: REST
+      rest_service_code: eKYB
+      access:
+      - TL-TEST/GOV/OSS/PORTAL
 - name: ss-mtc
   url: https://127.0.0.1:3000/api/v1
   api_key_url: https://127.0.0.1:3000/api/v1/api-keys
@@ -74,7 +79,6 @@ security_server:
       access:
       - TL-TEST/GOV/OSS/PORTAL
       - TL-TEST/GOV/MJ/JUSTICE
-      - TL-TEST/GOV/MOH/HEALTH
 - name: ss-oss
   url: https://127.0.0.1:5000/api/v1
   api_key_url: https://127.0.0.1:5000/api/v1/api-keys

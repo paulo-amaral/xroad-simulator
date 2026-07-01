@@ -38,10 +38,9 @@ services:
       XROAD_TOKEN_PIN: "Sandbox_2026"
       XROAD_ADMIN_USER: "xrd"
       XROAD_ADMIN_PASSWORD: "secret"
-    volumes:
-      - cs-recovered-etc:/etc/xroad
-      - cs-recovered-var:/var/lib/xroad
-      - cs-recovered-postgres-main:/var/lib/postgresql/16/main
+    # Ephemeral, like the Security Servers: a restart preserves the container's writable layer, but a
+    # recreate/wipe starts the Central Server clean. This is what stops stale members/servers/CAs from
+    # a previous run accumulating (e.g. an old Ministry of Health lingering after it was replaced).
     networks: [xroad]
     deploy:
       resources:
@@ -76,9 +75,9 @@ services:
       cs:
         condition: service_healthy
 
-  ss-moh:
+  ss-serve:
     image: niis/xroad-security-server-sidecar:7.7.0
-    hostname: ss-moh
+    hostname: ss-serve
     ports:
       - "2000:4000"
       - "2080:8080"
@@ -150,6 +149,16 @@ services:
       HTTP_PORT: "8080"
     networks: [xroad]
 
+  # Business registry behind SERVE I.P (GOV/SERVE) — the eKYB service. Serves registration data
+  # (TL model, adapted from the CamDX eKYB verification APIs; no external domain).
+  serve-mock:
+    image: nginx:1.27-alpine
+    hostname: serve-mock
+    volumes:
+      - ./xroad/mocks/serve/ekyb.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./xroad/mocks/serve/company.json:/usr/share/nginx/html/company.json:ro
+    networks: [xroad]
+
   # ── Citizen identity layer (mock, outside X-Road) ──
   # eID / IdP: mock OpenID Connect provider for citizen login.
   # Discovery: http://localhost:9080/default/.well-known/openid-configuration
@@ -213,15 +222,3 @@ networks:
 
 volumes:
   testca-home:
-  cs-etc:
-  cs-var:
-  cs-postgres:
-  cs-recovered-etc:
-    external: true
-    name: c21e0507bdae5f16a8f494f891ca66e1dff11ecda5ece5791443d2f39eab82a0
-  cs-recovered-var:
-    external: true
-    name: d7765f13133840d99abc3e8a9d0b3201c56e24b63a90d0b01703da2762f13fe6
-  cs-recovered-postgres-main:
-    external: true
-    name: eae27e4767107df73dea76fb7f43851bd107657f04991ac1c41bb2698dcc04d0

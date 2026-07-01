@@ -92,7 +92,7 @@ cat <<EOF
 Access (login xrd / secret):
   Central Server   ${CS_URL}
   ss-mj  (Justica) https://localhost:1000
-  ss-moh (Saude)   https://localhost:2000
+  ss-serve (SERVE)  https://localhost:2000
   ss-mtc (DNTT)    https://localhost:3000
   ss-oss (OSS)     https://localhost:5000
   Test CA          http://localhost:8888/testca/

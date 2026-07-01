@@ -5,7 +5,7 @@ This sandbox simulates ministries joined to a single X-Road instance, exchanging
 | Ministry / portal | Member | Subsystem | Role |
 |---|---|---|---|
 | Ministry of Justice | `TL-TEST/GOV/MJ` | `JUSTICE` | provider of `birth-certificate`, consumer |
-| Ministry of Health | `TL-TEST/GOV/MOH` | `HEALTH` | consumer |
+| SERVE I.P. (business registry, under MCAE) | `TL-TEST/GOV/SERVE` | `REGISTRY` | provider of `eKYB` (business verification) |
 | Transportes e Comunicacoes (DNTT) | `TL-TEST/GOV/MTC` | `DNTT` | provider of `driver-license` |
 | One-Stop-Shop (one-stop-shop) | `TL-TEST/GOV/OSS` | `PORTAL` | consumer on behalf of citizens |
 
@@ -38,7 +38,7 @@ UIs Available:
 - **One-Stop-Shop portal:** `http://localhost:8000` · **eID:** `:9080` · **e-KYC:** `:9081`
 - Security Servers admin panels (login `xrd` / `secret`):
   - ss-mj (Justice): `https://localhost:1000`
-  - ss-moh (Health): `https://localhost:2000`
+  - ss-serve (SERVE I.P.): `https://localhost:2000`
   - ss-mtc (DNTT): `https://localhost:3000`
   - ss-oss (Portal): `https://localhost:5000`
 
@@ -107,11 +107,11 @@ Read the real reason instead of guessing: `python3 tools/sandboxctl.py logs` (or
 | `element 'managementService' is not complete ... managementRequestServiceProviderId` | Management Service Provider not set | Create `GOV` class -> member `GOV/01` -> subsystem `MANAGEMENT`, then set `SUBSYSTEM:TL-TEST:GOV:01:MANAGEMENT` as provider |
 | *Add member* dialog shows "No data available" | No member classes exist | Settings → System Settings → Member Classes → Add `GOV` (Step 2.4) |
 | Error returns after a restart | Container restart logs the signing token out | Log in to the signing token again (keys stay; no need to recreate) |
-| Security Server owner shows **"unknown member"** | The owner member (e.g. `TL-TEST:GOV:MOH`) is not registered in the Central Server, so its name is missing from global conf | CS → Members → **Add member** (class `GOV`, the owner's code); wait ~1 min for global conf to refresh |
+| Security Server owner shows **"unknown member"** | The owner member (e.g. `TL-TEST:GOV:SERVE`) is not registered in the Central Server, so its name is missing from global conf | CS → Members → **Add member** (class `GOV`, the owner's code); wait ~1 min for global conf to refresh |
 | `Could not find any certificates for member 'SUBSYSTEM:TL-TEST/GOV/MJ/JUSTICE'` | Client/subsystem certificate registration was attempted before the member/client certificate state was ready | Do not run full `xrdsst apply`; use `./init.sh` or the staged manual sequence from `install.sh` |
 | Security Servers page on CS shows no rows | Auth cert registration requests are not approved yet, or SS addresses never reached global configuration | Run `tools/scripts/provision-ss.sh`, then `tools/scripts/provision-mgmt.sh`; wait for global conf generation |
 | Management requests return 500 with timestamp errors | TSA was registered without its certificate, so message timestamping fails | Re-run `./init.sh` or add the Test TSA with multipart `url` and `certificate` |
-| Cross-SS calls fail although local calls work | Security Server address is `127.0.0.1` in global conf | Use the container hostname (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) as the server address |
+| Cross-SS calls fail although local calls work | Security Server address is `127.0.0.1` in global conf | Use the container hostname (`ss-mj`, `ss-serve`, `ss-mtc`, `ss-oss`) as the server address |
 | `tools/scripts/generate-anchor.sh` says it cannot create an API key | The Central Server is not initialized/login-ready yet, or the UI session login failed | Run `tools/scripts/provision-cs.sh` first; verify `https://localhost:4000` accepts `xrd` / `secret` |
 | `/etc/xroad/globalconf` is empty | Generation has not succeeded yet | Fix generation first; the management service consumes it afterwards |
 
@@ -173,7 +173,7 @@ sandboxes/timor-leste/
 - **Observability:** `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d` (Grafana `:3001`).
 - **Compliance (GovTL):** standards & gap matrix in [govtl-compliance.md](../../docs/govtl-compliance.md).
 - **SBOM / CVE:** `tools/scripts/sbom.sh` (syft + grype); CI runs the same gate plus secret scanning (`.github/workflows/ci.yml`).
-- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`Sandbox_2026`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss`) plus the Central Server.
+- **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`Sandbox_2026`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-serve`, `ss-mtc`, `ss-oss`) plus the Central Server.
 - **Kubernetes:** Deploy the Security Server Sidecar per ministry. See the [Sidecar user guide](https://docs.x-road.global/Sidecar/security_server_sidecar_user_guide.html).
 - **Test CA:** `testca` (CA + OCSP + TSA in one container); replace with a real approved CA in production.
 - **Security Server Toolkit:** [xrdsst on GitHub](https://github.com/nordic-institute/X-Road-Security-Server-toolkit)

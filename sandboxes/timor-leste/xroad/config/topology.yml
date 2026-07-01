@@ -27,13 +27,16 @@ members:
             type: REST
             internal_url: http://mj-mock:8080
 
-  - name: Ministry of Health
-    member_code: MOH
-    security_server: ss-moh
+  - name: SERVE I.P.
+    member_code: SERVE
+    security_server: ss-serve
     subsystems:
-      - code: HEALTH         # consumer of driver-license
-        name: National Health Services
-        role: consumer
+      - code: REGISTRY       # business registry under MCAE; provider of eKYB
+        name: SERVE I.P. Business Registry
+        role: provider
+        services:
+          - code: eKYB
+            internal_url: http://serve-mock:8080
 
   - name: Ministry of Transport and Communications (DNTT)
     member_code: MTC
@@ -69,10 +72,8 @@ access_grants:
   driver-license:               # provided by GOV/MTC/DNTT
     - TL-TEST/GOV/OSS/PORTAL     # One-Stop-Shop, on behalf of authenticated citizens
     - TL-TEST/GOV/MJ/JUSTICE     # Justice may verify driver licenses
-    - TL-TEST/GOV/MOH/HEALTH     # Health may verify driver licenses
   birth-certificate:            # provided by GOV/MJ/JUSTICE (civil registry)
     - TL-TEST/GOV/OSS/PORTAL     # citizens request the certificate via One-Stop-Shop
-    - TL-TEST/GOV/MOH/HEALTH     # Health may verify birth records (e.g. newborn care)
     # Justice is the provider; citizens may also request the certificate in person at MJ.
     # Add or remove subsystems here. Every grant must have a matching deny test.
     # Least privilege: grant the portal only the services citizens actually use.

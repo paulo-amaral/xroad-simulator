@@ -183,7 +183,7 @@
       <p class="eyebrow">Scenarios</p>
       <button class="scn" data-scn="birth"><span class="ic"></span>Citizen requests a birth certificate · Justice</button>
       <button class="scn" data-scn="dntt"><span class="ic"></span>Citizen checks a driver license · DNTT</button>
-      <button class="scn" data-scn="health"><span class="ic"></span>Health consults a birth certificate · MoH → Justice</button>
+      <button class="scn" data-scn="ekyb"><span class="ic"></span>Verify a business (eKYB) · One-Stop-Shop → SERVE</button>
       <button class="scn" data-scn="just"><span class="ic"></span>Justice queries DNTT · system to system</button>
       <button class="scn" data-scn="register"><span class="ic"></span>Register a subsystem · via management service</button>
       <button class="scn deny" data-scn="deny"><span class="ic"></span>Access denied · subsystem without ACL</button>
@@ -215,7 +215,7 @@
         <tr><td class="p">8080 / 8443</td><td>Information system access points (HTTP/HTTPS)</td></tr>
         <tr class="grp"><td colspan="2">Admin UIs (local only)</td></tr>
         <tr><td class="p">4000</td><td>Central Server admin UI + REST API</td></tr>
-        <tr><td class="p">1000/2000/3000/5000</td><td>ss-mj / ss-moh / ss-mtc / ss-oss admin UI</td></tr>
+        <tr><td class="p">1000/2000/3000/5000</td><td>ss-mj / ss-serve / ss-mtc / ss-oss admin UI</td></tr>
         <tr class="grp"><td colspan="2">Trust services &amp; identity</td></tr>
         <tr><td class="p">8888</td><td>Certificate Authority: web · sign · OCSP</td></tr>
         <tr><td class="p">8899</td><td>Certificate Authority: TSA (RFC 3161 timestamping)</td></tr>
@@ -251,11 +251,11 @@ const NODES={
            role:"Person using the One-Stop-Shop",ports:["8000 → portal"],svc:[]},
   eid:    {x:50, y:200,w:120,h:56,t:"eID (IdP)",s:"OIDC provider",cls:"id",u:"http://localhost:9080/default/.well-known/openid-configuration",
            role:"National digital identity — OpenID Connect login",ports:["9080"],svc:["authorize","token","jwks"]},
-  ekyc:   {x:50, y:500,w:120,h:56,t:"e-KYC",s:"identity proofing",cls:"id",u:"http://localhost:9081/verify",
-           role:"Identity verification (document + liveness)",ports:["9081"],svc:["/verify"]},
+  ekyc:   {x:50, y:500,w:120,h:56,t:"e-KYC",s:"citizen door",cls:"id",u:"http://localhost:9081/verify",
+           role:"Citizen door — e-KYC identity verification (document + liveness)",ports:["9081"],svc:["/verify"]},
   portal: {x:230,y:336,w:160,h:88,t:"One-Stop-Shop",s:"Balkaun Uniku",cls:"oss",u:"http://localhost:8000",
-           role:"Consumer information system — authenticates the citizen and calls services on their behalf",
-           ports:["8000 (web)","→ ss-oss 8443"],svc:["eID login","e-KYC","service requests"]},
+           role:"Consumer information system with two doors: citizens (eID + e-KYC) and businesses (eKYB via SERVE I.P.); calls services on their behalf",
+           ports:["8000 (web)","→ ss-oss 8443"],svc:["citizen: eID + e-KYC","business: eKYB","service requests"]},
   ssoss:  {x:480,y:386,w:140,h:62,t:"ss-oss",s:"GOV/OSS · PORTAL",cls:"sys",u:"https://localhost:5000",
            role:"Security Server of the One-Stop-Shop (consumer)",ports:["5000 admin","8443 internal","5500/5577 ext"],
            svc:["consumer: PORTAL"]},
@@ -270,11 +270,11 @@ const NODES={
            svc:["birth-certificate/v1"]},
   dbmj:   {x:960,y:252,db:1,t:"Justice DB",s:"civil registry",cls:"db",
            role:"Civil registry behind mj-mock (provider information system)",ports:["8080 mj-mock"],svc:["certificates"]},
-  ssmoh:  {x:690,y:402,w:140,h:62,t:"ss-moh",s:"GOV/MOH · HEALTH",cls:"sys",u:"https://localhost:2000",
-           role:"Ministry of Health Security Server (consumer only)",ports:["2000 admin","8443 internal","5500/5577 ext"],
-           svc:["consumer: HEALTH"]},
-  dbmoh:  {x:960,y:402,db:1,t:"Health DB",s:"clinical records",cls:"db",
-           role:"Health records (internal, not published as an X-Road service)",ports:["internal"],svc:[]},
+  ssserve:{x:690,y:402,w:140,h:62,t:"ss-serve",s:"GOV/SERVE · REGISTRY",cls:"sys",u:"https://localhost:2000",
+           role:"SERVE I.P. Security Server (business registry under MCAE; provider of eKYB)",ports:["2000 admin","8443 internal","5500/5577 ext"],
+           svc:["eKYB"]},
+  dbserve:{x:960,y:402,db:1,t:"Business Registry",s:"SERVE I.P. records",cls:"db",
+           role:"Business register behind serve-mock (company info, TIN, directors)",ports:["8080 serve-mock"],svc:["eKYB"]},
   ssmtc:  {x:690,y:576,w:140,h:62,t:"ss-mtc",s:"DNTT + MANAGEMENT",cls:"sys",u:"https://localhost:3000",
            role:"Transport Security Server — provider of driver-license AND host of GOV/01/MANAGEMENT (operator)",
            ports:["3000 admin","8443 internal","5500/5577 ext","4002 mgmt"],svc:["driver-license/v1","management"]},
@@ -287,10 +287,10 @@ const EDGES=[
   {a:"ekyc",b:"portal",lbl:"e-KYC :9081",lx:230,ly:482},
   {a:"portal",b:"ssoss",lbl:"REST :8443",lx:448,ly:410},
   {a:"ssoss",b:"ssmj",via:[{x:640,y:417},{x:640,y:283}]},
-  {a:"ssoss",b:"ssmoh",lbl:"mTLS :5500",lx:648,ly:432,via:[{x:640,y:417},{x:640,y:433}]},
+  {a:"ssoss",b:"ssserve",lbl:"mTLS :5500",lx:648,ly:432,via:[{x:640,y:417},{x:640,y:433}]},
   {a:"ssoss",b:"ssmtc",via:[{x:640,y:417},{x:640,y:607}]},
   {a:"ssmj",b:"dbmj",lbl:":8080"},
-  {a:"ssmoh",b:"dbmoh"},
+  {a:"ssserve",b:"dbserve"},
   {a:"ssmtc",b:"dbmtc",lbl:":8080"},
   {a:"ssmtc",b:"cs",lbl:"mgmt :4002",lx:824,ly:360,dash:1,via:[{x:800,y:607},{x:800,y:120}]},
 ];
@@ -300,7 +300,7 @@ const ZONES=[
 ];
 const MINZONES=[
   {x:650,y:220,w:430,h:118,label:"Ministry of Justice"},
-  {x:650,y:370,w:430,h:118,label:"Ministry of Health (consumer)"},
+  {x:650,y:370,w:430,h:118,label:"SERVE I.P. — business registry (eKYB)"},
   {x:650,y:544,w:430,h:118,label:"Transport / DNTT — operator"},
 ];
 
@@ -397,15 +397,16 @@ function citizenFlow(pss,db,service){return{path:["citizen","portal","ssoss",pss
 const SCN={
   birth: citizenFlow("ssmj","dbmj","TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1"),
   dntt:  citizenFlow("ssmtc","dbmtc","TL-TEST/GOV/MTC/DNTT/driver-license/v1"),
-  health:{path:["ssmoh","ssmj","dbmj"],steps:[
-    {lat:0,cls:"sys",msg:"Ministry of Health (GOV/MOH/HEALTH) consults a birth certificate — system to system, no portal"},
-    {hop:["ssmoh","ssmj"],lat:24,cls:"sec",msg:"ss-moh ↔ ss-mj: mTLS handshake on :5500"},
+  ekyb:{path:["ssoss","ssserve","dbserve"],steps:[
+    {lat:0,cls:"bu",msg:"Citizen/business verifies a company registration (eKYB) via the One-Stop-Shop"},
+    {hop:["ssoss","ssserve"],lat:24,cls:"sec",msg:"ss-oss ↔ ss-serve: mTLS handshake on :5500"},
     {lat:5,cls:"sec",msg:"OCSP: cached validity (refreshed periodically, not per request) verified - no CA call OK"},
-    {hop:["ssmoh","ssmj"],lat:21,cls:"sec",msg:"X-Road transport :5500 — signed multipart + x-road-request-id"},
-    {lat:7,cls:"sec",msg:"ss-mj verifies the chain (global conf) + signature OK"},
-    {lat:2,cls:"sec",msg:"Access rights (ACL): HEALTH -> birth-certificate OK"},
-    {hop:["ssmj","dbmj"],lat:12,cls:"sys",msg:"ss-mj → Justice IS :8080 → query the civil registry"},
+    {hop:["ssoss","ssserve"],lat:21,cls:"sec",msg:"X-Road transport :5500 — signed multipart + x-road-request-id"},
+    {lat:7,cls:"sec",msg:"ss-serve verifies the chain (global conf) + signature OK"},
+    {lat:2,cls:"sec",msg:"Access rights (ACL): OSS/PORTAL -> eKYB OK"},
+    {hop:["ssserve","dbserve"],lat:12,cls:"sys",msg:"ss-serve → serve-mock :8080 → SERVE I.P. business register"},
     {lat:4,cls:"sec",msg:"Message log + timestamp (RFC 3161)"},
+    {lat:6,cls:"ok",msg:"200 — company verified (name, type, TIN, directors) + X-Road-Request-Id"},
   ]},
   just:{path:["ssmj","ssmtc","dbmtc"],steps:[
     {lat:0,cls:"sys",msg:"Justice (GOV/MJ/JUSTICE) calls DNTT driver-license — system to system, no portal"},
@@ -482,7 +483,7 @@ async function doStep(){
   updateButtons();
 }
 async function play(){playing=true;updateButtons();while(idx<cur.steps.length){await doStep();await sleep(420);}playing=false;updateButtons();}
-const SCNCOLOR={birth:"#c084fc",dntt:"#22d3ee",health:"#fbbf24",just:"#5ab0ff",register:"#a855f7",deny:"#ff5f56"};
+const SCNCOLOR={birth:"#c084fc",dntt:"#22d3ee",ekyb:"#fbbf24",just:"#5ab0ff",register:"#a855f7",deny:"#ff5f56"};
 function loadScenario(key){
   cur=SCN[key];idx=0;t=0;logEl.innerHTML="";highlight(null);
   logEl.style.setProperty("--rc",SCNCOLOR[key]||"#cfcfcf");

@@ -50,13 +50,18 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
 }
 
+# The One-Stop-Shop has two doors: the citizen door (eID + e-KYC, then citizen services) and the
+# business door (eKYB — Know Your Business — verifying/registering a company via SERVE I.P.).
 SERVICES = [
-    {"title": "Birth Certificate", "abbr": "BC",
+    {"title": "Birth Certificate", "abbr": "BC", "kind": "citizen",
      "service": "TL-TEST/GOV/MJ/JUSTICE/birth-certificate/v1", "resource": "certificates/TL-67890",
      "mock": "http://mj-mock:8080"},
-    {"title": "Driver License", "abbr": "DL",
+    {"title": "Driver License", "abbr": "DL", "kind": "citizen",
      "service": "TL-TEST/GOV/MTC/DNTT/driver-license/v1", "resource": "licenses/TL-12345",
      "mock": "http://dntt-mock:8080"},
+    {"title": "Business Registration (eKYB)", "abbr": "KB", "kind": "business",
+     "service": "TL-TEST/GOV/SERVE/REGISTRY/eKYB/v1", "resource": "companies/TL-BR-2026-004512",
+     "mock": "http://serve-mock:8080"},
 ]
 
 SESSIONS = {}  # sid -> {"state","verifier","claims"}  (in-memory; sandbox only)
@@ -197,15 +202,24 @@ def render_card(svc, res):
     return f'<div class="card">{head} <span class="badge bad">FALHOU</span>{req}{term}</div>'
 
 
-def service_menu():
-    items = "".join(
+def _svc_buttons(kind):
+    return "".join(
         f'<a class="btn" style="margin:0 10px 8px 0" href="/request?svc={i}">'
         f'<span class="svcmark">{html.escape(s["abbr"])}</span>{html.escape(s["title"])}</a>'
-        for i, s in enumerate(SERVICES))
-    return ('<div class="card"><h2>Choose a service to request</h2>'
-            '<p class="muted">Pick a service. The One-Stop-Shop requests it on your behalf through its '
-            'Security Server (ss-oss); X-Road validates the call and returns the result.</p>'
-            f'<div>{items}</div></div>')
+        for i, s in enumerate(SERVICES) if s.get("kind") == kind)
+
+
+def service_menu():
+    # Two doors: the citizen door (services you reach after eID + e-KYC) and the business door (eKYB).
+    return ('<div class="card"><h2>Citizen services</h2>'
+            '<p class="muted">Signed in as a citizen (eID + e-KYC). The One-Stop-Shop requests these on '
+            'your behalf through its Security Server (ss-oss); X-Road validates the call and returns the result.</p>'
+            f'<div>{_svc_buttons("citizen")}</div></div>'
+            '<div class="card"><h2>Business door — eKYB</h2>'
+            '<p class="muted">The business entry point. <b>eKYB</b> (Know Your Business) verifies and registers a '
+            'company through <span class="kv">SERVE I.P.</span> (<code>TL-TEST/GOV/SERVE/REGISTRY</code>) — the '
+            'parallel of e-KYC for citizens.</p>'
+            f'<div>{_svc_buttons("business")}</div></div>')
 
 
 def home_logged_in(sess, result_html=""):
@@ -222,7 +236,9 @@ def home_logged_in(sess, result_html=""):
                f'<span class="tag">{detail}</span> · '
                f'<a class="muted" href="/logout">sign out</a></div>')
     intro = ('<p class="muted">Session started via OIDC authorization_code + PKCE; the ID-token signature was '
-             'verified against the eID JWKS, then the One-Stop-Shop ran e-KYC identity verification.</p>')
+             'verified against the eID JWKS, then the One-Stop-Shop ran e-KYC identity verification. '
+             'The One-Stop-Shop has two doors: <b>citizens</b> (eID + e-KYC) and <b>businesses</b> '
+             '(eKYB via SERVE I.P.).</p>')
     return page(intro + service_menu() + result_html, citizen)
 
 

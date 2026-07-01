@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info:
+  title: SERVE I.P eKYB API (Timor-Leste)
+  version: "1.0.0"
+  description: >
+    Electronic Know Your Business (eKYB) verification for Timor-Leste, published by SERVE I.P.
+    (business registry, member TL-TEST/GOV/SERVE, subsystem REGISTRY) over X-Road. The verification
+    surface is modelled on the CamDX eKYB APIs (verify basic company information, TIN, directors,
+    enterprise opening announcement) but uses Timor-Leste identifiers and data. Test/dev only.
+servers:
+  - url: https://ss-oss:8443/r1/TL-TEST/GOV/SERVE/REGISTRY/eKYB
+    description: Consumed through the One-Stop-Shop Security Server (ss-oss)
+paths:
+  /v1/companies/{brn}:
+    get:
+      summary: Verify basic company information
+      parameters:
+        - { name: brn, in: path, required: true, schema: { type: string }, description: Business registration number }
+      responses:
+        "200":
+          description: Company record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Company" }
+  /v1/companies/{brn}/tin:
+    get:
+      summary: Verify company TIN (tax identification number)
+      parameters:
+        - { name: brn, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: TIN verification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tin" }
+  /v1/companies/{brn}/directors:
+    get:
+      summary: Verify company directors
+      parameters:
+        - { name: brn, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Directors
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Director" }
+  /v1/companies/{brn}/announcement:
+    get:
+      summary: Verify enterprise opening announcement
+      parameters:
+        - { name: brn, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Announcement record
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Announcement" }
+components:
+  schemas:
+    CompanyType:
+      type: string
+      enum:
+        - PRIVATE_LIMITED_COMPANY
+        - PUBLIC_LIMITED_COMPANY
+        - REGISTER_BRANCH_OFFICE_OF_FOREIGN_COMPANY
+        - REGISTER_COMMERCIAL_REPRESENTATIVE_OFFICE
+        - SOLE_PROPRIETORSHIP
+        - GENERAL_PARTNERSHIP
+        - LIMITED_PARTNERSHIP
+    Company:
+      type: object
+      properties:
+        business_registration_number: { type: string }
+        company_name: { type: string }
+        company_type: { $ref: "#/components/schemas/CompanyType" }
+        status: { type: string, enum: [ACTIVE, SUSPENDED, DISSOLVED] }
+        registered_at: { type: string, format: date }
+        registry: { type: string }
+        supervising_ministry: { type: string }
+    Tin:
+      type: object
+      properties:
+        tax_identification_number: { type: string }
+        status: { type: string, enum: [VALID, INVALID, UNKNOWN] }
+        vat_registered: { type: boolean }
+    Director:
+      type: object
+      properties:
+        name: { type: string }
+        role: { type: string }
+        nationality: { type: string }
+    Announcement:
+      type: object
+      properties:
+        announced: { type: boolean }
+        gazette_reference: { type: string }
+        announced_at: { type: string, format: date }

@@ -26,7 +26,7 @@ print(next((c['certificate_details']['hash'] for k in d.get('keys',[]) if k.get(
             for c in k.get('certificates',[]) if c.get('status')!='REGISTERED'), ''))"; }
 
 # port : api-key-var : hostname
-for entry in "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_MOH_API_KEY:ss-moh" "3000:SS_MTC_API_KEY:ss-mtc" "5000:SS_OSS_API_KEY:ss-oss"; do
+for entry in "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_SERVE_API_KEY:ss-serve" "3000:SS_MTC_API_KEY:ss-mtc" "5000:SS_OSS_API_KEY:ss-oss"; do
   p="${entry%%:*}"; rest="${entry#*:}"; kn="${rest%%:*}"; host="${rest#*:}"; key="$(eval echo \$$kn)"
   H="Authorization: X-Road-ApiKey token=$key"; B="https://127.0.0.1:$p/api/v1"
   log "$host: signing auth + sign certificates"

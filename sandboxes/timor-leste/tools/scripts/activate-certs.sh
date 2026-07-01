@@ -9,7 +9,7 @@ set -uo pipefail
 log(){ printf '\033[1;34m[ss-activate]\033[0m %s\n' "$*"; }
 
 # port : api-key env var
-ENTRIES="1000:SS_MJ_API_KEY 2000:SS_MOH_API_KEY 3000:SS_MTC_API_KEY 5000:SS_OSS_API_KEY"
+ENTRIES="1000:SS_MJ_API_KEY 2000:SS_SERVE_API_KEY 3000:SS_MTC_API_KEY 5000:SS_OSS_API_KEY"
 deadline=$(( $(date +%s) + 600 ))   # up to 10 min for OCSP fetch + auth-cert REGISTERED propagation
 
 while :; do

@@ -149,7 +149,7 @@ tools/scripts/generate-anchor.sh
 
 log "7. Preparing Security Servers with xrdsst (anchor, token, TSA, clients, CSRs)..."
 log "  waiting for the Security Server admin APIs (emulated boot is slow)..."
-for ss in ss-mj ss-moh ss-mtc ss-oss; do
+for ss in ss-mj ss-serve ss-mtc ss-oss; do
   wait_for_ss_admin "$ss"
 done
 if [ ! -f .env ]; then

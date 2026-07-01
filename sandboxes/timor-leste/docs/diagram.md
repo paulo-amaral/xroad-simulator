@@ -24,8 +24,8 @@ graph TB
     subgraph MJ[Ministry of Justice]
       SSJ[ss-mj<br/>GOV/MJ · birth-certificate] --- DBJ[(Justice DB)]
     end
-    subgraph MOH[Ministry of Health]
-      SSH[ss-moh<br/>GOV/MOH] --- DBH[(Health DB)]
+    subgraph SERVE[SERVE I.P. under MCAE]
+      SSH[ss-serve<br/>GOV/SERVE · REGISTRY] --- DBH[(Business Registry)]
     end
     subgraph MTC[Transport - DNTT]
       SSD[ss-mtc<br/>GOV/MTC · driver-license] --- DBD[(DNTT DB)]
@@ -51,7 +51,7 @@ graph TB
   classDef dntt fill:#ecfeff,stroke:#0891b2,color:#164e63;
   classDef bu fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
   class MJ,SSJ,DBJ justica;
-  class MOH,SSH,DBH saude;
+  class SERVE,SSH,DBH saude;
   class MTC,SSD,DBD dntt;
   class BU,CIT,EID,EKYC,POR bu;
 ```

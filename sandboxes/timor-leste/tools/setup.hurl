@@ -84,7 +84,7 @@ HTTP *
 POST https://cs:4000/api/v1/members
 Authorization: X-Road-ApiKey token={{apikey}}
 Content-Type: application/json
-{ "member_id": { "member_class": "GOV", "member_code": "MOH" }, "member_name": "Ministry of Health" }
+{ "member_id": { "member_class": "GOV", "member_code": "SERVE" }, "member_name": "SERVE I.P." }
 HTTP *
 
 POST https://cs:4000/api/v1/members
@@ -114,7 +114,7 @@ HTTP *
 POST https://cs:4000/api/v1/subsystems
 Authorization: X-Road-ApiKey token={{apikey}}
 Content-Type: application/json
-{ "subsystem_id": { "member_class": "GOV", "member_code": "MOH", "subsystem_code": "HEALTH" } }
+{ "subsystem_id": { "member_class": "GOV", "member_code": "SERVE", "subsystem_code": "REGISTRY" } }
 HTTP *
 
 POST https://cs:4000/api/v1/subsystems
