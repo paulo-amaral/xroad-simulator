@@ -4,7 +4,9 @@ A development sandbox and reference for building on the **X-Road data exchange l
 ecosystem (Central Server, test CA, Security Servers) running on Docker Compose / Kubernetes, plus consumer
 and provider services built test-first against it.
 
-![X-Road Timor-Leste service flow simulator](sandboxes/timor-leste/citizen/simulator/img/simulator-preview.webp)
+<video controls muted playsinline width="100%">
+  <source src="sandboxes/timor-leste/citizen/simulator/img/simulator-preview.webm" type="video/webm">
+</video>
 
 Development follows the guides in [docs/](docs/README.md): a mandatory pre-flight gate, test-driven
 development, zero-trust controls, and the official X-Road stack.
