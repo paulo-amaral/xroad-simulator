@@ -49,9 +49,9 @@ graph TB
 
 ## In this sandbox
 
-- Members: `GOV/MJ`, `GOV/MOH`, `GOV/MTC`, `GOV/OSS` (plus `GOV/01` for the management service).
-- Security Servers: `ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss` (each owned by its member).
-- Subsystems: `JUSTICE`, `HEALTH`, `DNTT`, `PORTAL`, `MANAGEMENT`.
+- Members: `GOV/MJ`, `GOV/SERVE`, `GOV/MTC`, `GOV/OSS` (plus `GOV/01` for the management service).
+- Security Servers: `ss-mj`, `ss-serve`, `ss-mtc`, `ss-oss` (each owned by its member).
+- Subsystems: `JUSTICE`, `REGISTRY`, `DNTT`, `PORTAL`, `MANAGEMENT`.
 
 ### Full sandbox map (members, Security Servers, subsystems, who consumes what)
 
@@ -63,8 +63,8 @@ graph TB
   subgraph MJ[Member GOV/MJ — Justice provider]
     SMJ[ss-mj] --- JUSTICE[JUSTICE<br/>provides birth-certificate/v1]
   end
-  subgraph MOH[Member GOV/MOH — Health consumer]
-    SMOH[ss-moh] --- HEALTH[HEALTH]
+  subgraph SERVE[Member GOV/SERVE — Business registry provider]
+    SSERVE[ss-serve] --- REGISTRY[REGISTRY<br/>provides eKYB/v1]
   end
   subgraph MTC[Member GOV/MTC — Transport / DNTT]
     SMTC[ss-mtc] --- DNTT[DNTT<br/>provides driver-license/v1]
@@ -75,25 +75,23 @@ graph TB
 
   PORTAL -->|consumes| JUSTICE
   PORTAL -->|consumes| DNTT
-  HEALTH -->|consumes| JUSTICE
-  HEALTH -->|consumes| DNTT
-  JUSTICE -->|consumes| DNTT
+  PORTAL -->|consumes| REGISTRY
 
   classDef gov fill:#eef2ff,stroke:#4f46e5,color:#312e81;
   classDef mj fill:#f3e8ff,stroke:#7c3aed,color:#3b0764;
-  classDef moh fill:#fff7ed,stroke:#d97706,color:#7c2d12;
+  classDef serve fill:#fff7ed,stroke:#d97706,color:#7c2d12;
   classDef mtc fill:#ecfeff,stroke:#0891b2,color:#164e63;
   classDef oss fill:#eff6ff,stroke:#2563eb,color:#1e3a8a;
   class GOVT,MGMT gov;
   class MJ,SMJ,JUSTICE mj;
-  class MOH,SMOH,HEALTH moh;
+  class SERVE,SSERVE,REGISTRY serve;
   class MTC,SMTC,DNTT mtc;
   class OSS,SOSS,PORTAL oss;
 ```
 
 - Each **member** owns one **Security Server** and exposes its services through a **subsystem**.
-- Access (consume arrows) follows the ACLs in `xroad/config/topology.yml`: `driver-license` is granted to
-  `PORTAL`, `JUSTICE`, `HEALTH`; `birth-certificate` is granted to `PORTAL`, `HEALTH`.
+- Access (consume arrows) follows the ACLs in `xroad/config/topology.yml`: `birth-certificate`,
+  `driver-license`, and `eKYB` are each granted to `PORTAL`.
 
 See `sandboxes/timor-leste/xroad/config/topology.yml` for the full map and the example README Step 2b for the
 UI walkthrough. Official reference: <https://docs.x-road.global/>.

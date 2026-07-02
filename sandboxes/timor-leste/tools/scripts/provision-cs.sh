@@ -127,7 +127,7 @@ for s in "${SUBSYSTEMS[@]}"; do
 done
 
 # Reconcile away stale members / security servers. The Central Server is persistent, so anything from a
-# previous topology (e.g. an old Ministry of Health after SERVE replaced it) would linger and confuse
+# previous topology (a member that was renamed or removed) would linger and confuse
 # the demo. Delete any security server, then any member, whose member code is not in the desired set
 # above. A member cannot be deleted while it still owns a security server, so servers go first.
 log "reconciling members/security servers to the topology"

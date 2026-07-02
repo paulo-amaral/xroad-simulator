@@ -20,7 +20,7 @@ scrape_configs:
   #   static_configs:
   #     - targets: ["ss-mj:9404", "ss-serve:9404", "ss-mtc:9404", "ss-oss:9404"]
 
-  # Enable once postgres-exporter points at each ministry / serverconf / messagelog DB.
+  # Enable once postgres-exporter points at each member / serverconf / messagelog DB.
   # - job_name: postgres
   #   static_configs:
-  #     - targets: ["pg-exporter-mtc:9187", "pg-exporter-moh:9187", "pg-exporter-mj:9187"]
+  #     - targets: ["pg-exporter-mtc:9187", "pg-exporter-serve:9187", "pg-exporter-mj:9187"]

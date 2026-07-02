@@ -1,6 +1,6 @@
 # X-Road Security Server (Sidecar) on Kubernetes — one ministry per copy of this file.
 # Deploy the official NIIS sidecar image; provision afterwards with xrdsst against :4000.
-# Parameterize per ministry by changing: the name suffix (mj/moh/mtc/oss) and the labels.
+# Parameterize per member by changing: the name suffix (mj/serve/mtc/oss) and the labels.
 # Test/dev manifest: replace the Secret values and use a real StorageClass + approved CA in production.
 #
 #   kubectl apply -f security-server.yaml

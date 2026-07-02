@@ -29,7 +29,7 @@ Then **enable** the service.
 ## 3. Grant access (least privilege)
 
 Add access rights on the service (or per endpoint, for finer control): select the consumer subsystems allowed
-to call it, e.g. `TL-TEST/GOV/MJ/JUSTICE` and `TL-TEST/GOV/MOH/HEALTH`. Grant only what each consumer needs.
+to call it, e.g. `TL-TEST/GOV/OSS/PORTAL`. Grant only what each consumer needs.
 A subsystem with no grant is denied; cover that with a negative test.
 
 ## 4. How a consumer calls it

@@ -14,14 +14,16 @@ log(){ printf '\033[1;34m[ss-certs]\033[0m %s\n' "$*"; }
 # Print "<key_id> <csr_id>" for the first key of a usage that has a CSR and no certificate yet.
 pending(){ python3 -c "
 import sys,json
-d=json.load(sys.stdin)
+raw=sys.stdin.read()
+d=json.loads(raw) if raw.strip() else {}
 for k in d.get('keys',[]):
     if k.get('usage')=='$1' and not k.get('certificates') and k.get('certificate_signing_requests'):
         print(k['id'], k['certificate_signing_requests'][0]['id']); break"; }
 # Print the hash of an AUTHENTICATION cert that is not yet REGISTERED.
 auth_hash(){ python3 -c "
 import sys,json
-d=json.load(sys.stdin)
+raw=sys.stdin.read()
+d=json.loads(raw) if raw.strip() else {}
 print(next((c['certificate_details']['hash'] for k in d.get('keys',[]) if k.get('usage')=='AUTHENTICATION'
             for c in k.get('certificates',[]) if c.get('status')!='REGISTERED'), ''))"; }
 
@@ -44,7 +46,8 @@ for entry in "1000:SS_MJ_API_KEY:ss-mj" "2000:SS_SERVE_API_KEY:ss-serve" "3000:S
   # good OCSP response, so retry while the Test CA + responder propagate into this server's global conf.
   shash="$(curl -sk -m10 -H "$H" "$B/tokens/0" | python3 -c '
 import sys,json
-d=json.load(sys.stdin)
+raw=sys.stdin.read()
+d=json.loads(raw) if raw.strip() else {}
 print(next((c["certificate_details"]["hash"] for k in d.get("keys",[]) if k.get("usage")=="SIGNING"
             for c in k.get("certificates",[]) if not c.get("active")), ""))')"
   if [ -n "$shash" ]; then

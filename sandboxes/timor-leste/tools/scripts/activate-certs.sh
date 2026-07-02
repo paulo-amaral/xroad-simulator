@@ -25,7 +25,8 @@ while :; do
     done <<EOF
 $(printf '%s' "$state" | python3 -c '
 import sys,json
-d=json.load(sys.stdin)
+raw=sys.stdin.read()
+d=json.loads(raw) if raw.strip() else {}
 for k in d.get("keys",[]):
     for c in k.get("certificates",[]):
         print(c.get("status"), c.get("active"), c["certificate_details"]["hash"])')

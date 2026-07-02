@@ -26,6 +26,27 @@ cd sandboxes/timor-leste
 ./init.sh
 ```
 
+### Which host: two supported tracks
+
+The X-Road images (`niis/xroad-central-server`, `niis/xroad-security-server-sidecar`, `xrddev-testca`) are
+published for **`linux/amd64` only** (verified: no `arm64` variant in their manifests). Pick your track:
+
+| Track | Translation | When to use | Setup |
+|---|---|---|---|
+| **Linux x86-64 (native)** | none | Best performance; CI, demos, servers | `./init.sh` directly. Native Docker Engine; the script auto-skips the macOS/Colima checks. |
+| **Apple Silicon + Colima** | Rosetta 2 (over `vz`) | Local dev on an M-series Mac | Recreate the VM as below, then `./init.sh`. |
+
+On Apple Silicon, Rosetta is the indicated translation layer (QEMU is far slower and destabilizes the JVMs),
+so `install.sh` requires `vz` + Rosetta and fails early without them. vCPU count is the real bottleneck, not
+RAM: the Central Server plus four Security Servers are five amd64 JVMs, so give the VM at least as many vCPUs
+as JVMs before running `./init.sh`:
+
+```bash
+colima stop
+colima start --vm-type vz --vz-rosetta --memory 16 --cpu 8
+docker context use colima
+```
+
 This follows the official X-Road `xrd-dev-stack` shape: bootstrap the Central Server and trust first, initialize Security Servers, create CSRs, sign/import/register certificates, approve management requests, publish clients/services/ACLs, then activate every certificate once OCSP and the approvals have settled. It uses supported REST APIs, `xrdsst`, and Hurl. It does not write directly to X-Road databases.
 
 Important: do not use a full `xrdsst -c xroad/config/xrdsst-config.yaml apply` as the main bootstrap path in this sandbox. It can try client/subsystem certificate work before the Security Servers and management services have reached the required global-configuration state. `init.sh` runs the safer staged sequence instead.

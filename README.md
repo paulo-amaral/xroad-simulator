@@ -101,13 +101,33 @@ See [stack.md](docs/stack.md).
 - Python 3 with `venv` and pip (for the `xrdsst` provisioning toolkit).
 - Optional: a Kubernetes cluster for deploying the Security Server Sidecar at scale.
 
+### macOS with Colima
+
+On Apple Silicon, the X-Road images used by this sandbox run as `linux/amd64`. If you use Colima instead of
+Docker Desktop, start it with Apple's native virtualization and Rosetta:
+
+```bash
+colima stop
+colima start --vm-type vz --vz-rosetta --memory 16 --cpu 8
+docker context use colima
+```
+
+The Central Server plus four Security Servers are five amd64 JVMs translated by Rosetta, so **vCPU count is
+the real bottleneck**, not RAM. Give the VM at least as many vCPUs as JVMs (`install.sh` enforces a minimum of
+6; 8 leaves headroom). With only 4 vCPUs the JVMs starve and TLS/OCSP handshakes time out, which surfaces as
+`unhealthy`, `SIGKILL`, `Global configuration is expired`, or TLS EOF errors during startup. Less memory,
+QEMU, or Rosetta disabled cause the same symptoms.
+
+On **Linux with native Docker Engine** none of this applies (no translation layer): run
+`tools/scripts/install.sh` directly. The script detects it is not on macOS/Colima and skips the VM checks.
+
 ## Install and run the sandbox
 
 The Timor-Leste reference ecosystem (X-Road 7.7.0) runs the Central Server, the test CA, and four Security Server
-Sidecars, one per member: Justice (`ss-mj`), Health (`ss-moh`), Transport/DNTT (`ss-mtc`), and the
-One-Stop-Shop (`ss-oss`). Behind the Security Servers sit the provider mocks `mj-mock` and `dntt-mock`;
-the supporting citizen-identity mocks are `eid-mock` and `ekyc-mock` (Health consumes only, so it has no
-provider mock). Full topology, ports, and the provisioning sequence are in the
+Sidecars, one per member: Justice (`ss-mj`), SERVE I.P. (`ss-serve`), Transport/DNTT (`ss-mtc`), and the
+One-Stop-Shop (`ss-oss`). Behind the Security Servers sit the provider mocks `mj-mock`, `dntt-mock`, and
+`serve-mock`; the supporting citizen-identity mocks are `eid-mock` and `ekyc-mock` (the One-Stop-Shop
+consumes; SERVE I.P. publishes the eKYB business-registry service). Full topology, ports, and the provisioning sequence are in the
 [Timor-Leste README](sandboxes/timor-leste/README.md); the generic sandbox pattern is in
 [sandbox.md](docs/sandbox.md).
 
@@ -124,7 +144,7 @@ provider mock). Full topology, ports, and the provisioning sequence are in the
    ```
 
    Default UI ports: Central Server `4000`, test CA `8888`, Security Servers `1000` (ss-mj) / `2000`
-   (ss-moh) / `3000` (ss-mtc) / `5000` (ss-oss).
+   (ss-serve) / `3000` (ss-mtc) / `5000` (ss-oss).
 
 3. **Initialize the Central Server and download the anchor.** Follow Step 2 in the
    [Timor-Leste README](sandboxes/timor-leste/README.md). The Security Servers need
@@ -186,9 +206,9 @@ cd ../ansible && ansible-playbook -i inventory.ini site.yml
 ## Worked example: Timor-Leste (sample agencies + One-Stop-Shop)
 
 [sandboxes/timor-leste/](sandboxes/timor-leste/README.md) joins sample provider and consumer agencies,
-plus a One-Stop-Shop portal, to one `TL-TEST` instance. One provider publishes a birth-certificate service
-and another publishes a driver-license service; the One-Stop-Shop consumes both on the citizen's behalf,
-while Health is a consumer. It includes a full Docker Compose ecosystem
+plus a One-Stop-Shop portal, to one `TL-TEST` instance. One provider publishes a birth-certificate service,
+another a driver-license service, and the business registry (SERVE I.P.) publishes an eKYB service; the
+One-Stop-Shop consumes all three on the citizen's and businesses' behalf. It includes a full Docker Compose ecosystem
 (Central Server, Test CA, four Security Servers — one per member — provider mocks, eID/e-KYC, and the portal),
 an `xrdsst` provisioning config, federation/sequence diagrams, and a walkthrough that shows how to sign
 certificates with the sandbox Test CA when you have no Certificate Authority of your own.

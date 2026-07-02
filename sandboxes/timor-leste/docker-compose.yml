@@ -41,7 +41,7 @@ services:
     # Persistent (compose-managed) so a restart or recreate keeps members, Security Server
     # registrations and the CS signing/TLS keys — otherwise the SSs "disappear" and the global conf
     # signature no longer verifies ("Global configuration is expired"). `down -v` still wipes for a
-    # clean run, and init.sh reconciles stale members/servers so nothing (e.g. an old MoH) accumulates.
+    # clean run, and init.sh reconciles stale members/servers so nothing from a previous topology accumulates.
     volumes:
       - cs-etc:/etc/xroad
       - cs-var:/var/lib/xroad
@@ -52,7 +52,7 @@ services:
         reservations:
           memory: 512M
         limits:
-          memory: 2560M
+          memory: 3072M
     healthcheck:
       interval: 5s
       retries: 40
@@ -75,7 +75,7 @@ services:
         reservations:
           memory: 512M
         limits:
-          memory: 2560M
+          memory: 3072M
     depends_on:
       cs:
         condition: service_healthy
@@ -94,7 +94,7 @@ services:
         reservations:
           memory: 512M
         limits:
-          memory: 2560M
+          memory: 3072M
     depends_on:
       cs:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
         reservations:
           memory: 512M
         limits:
-          memory: 2560M
+          memory: 3072M
     depends_on:
       cs:
         condition: service_healthy
@@ -132,7 +132,7 @@ services:
         reservations:
           memory: 512M
         limits:
-          memory: 2560M
+          memory: 3072M
     depends_on:
       cs:
         condition: service_healthy

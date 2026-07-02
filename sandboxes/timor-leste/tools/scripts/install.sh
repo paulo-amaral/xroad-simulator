@@ -9,18 +9,59 @@ COMPOSE_FILE="${SANDBOX_DIR}/docker-compose.yml"
 
 CS_URL="https://localhost:4000"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-600}"   # seconds to wait for the Central Server UI
+# Warning: X-Road central/security server images are memory-heavy, especially on
+# Apple Silicon where amd64 images need translation. Colima must use vz +
+# Rosetta; otherwise CPU/RAM pressure makes services get OOM-killed and show up
+# as "unhealthy".
+COLIMA_MIN_MEMORY_GIB="${COLIMA_MIN_MEMORY_GIB:-16}"
+# The Central Server plus four Security Servers are five amd64 JVMs; under Rosetta
+# they saturate a 4-vCPU VM and TLS/OCSP handshakes time out. Give the VM at least
+# as many vCPUs as JVMs so the scheduler stops starving them.
+COLIMA_MIN_CPUS="${COLIMA_MIN_CPUS:-6}"
 
 log()  { printf '\033[1;34m[install]\033[0m %s\n' "$*"; }
 fail() { printf '\033[1;31m[install] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 require() { command -v "$1" >/dev/null 2>&1 || fail "missing dependency: $1"; }
 
+ensure_colima_resources() {
+  local resize="colima stop && colima start --vm-type vz --vz-rosetta --memory ${COLIMA_MIN_MEMORY_GIB} --cpu ${COLIMA_MIN_CPUS}"
+
+  if ! colima status 2>&1 | grep -q 'Virtualization.Framework'; then
+    fail "Colima is not using Apple's native Virtualization.framework. Recreate it with: ${resize}"
+  fi
+
+  if ! grep -q '^rosetta: true' "${HOME}/.colima/default/colima.yaml" 2>/dev/null; then
+    fail "Colima Rosetta is disabled. Enable it with: ${resize}"
+  fi
+
+  colima_memory_gib="$(colima list 2>/dev/null | awk '$1 == "default" {gsub(/GiB/, "", $5); print int($5)}')"
+  if [ -n "$colima_memory_gib" ] && [ "$colima_memory_gib" -lt "$COLIMA_MIN_MEMORY_GIB" ]; then
+    fail "Colima has ${colima_memory_gib}GiB RAM; X-Road needs at least ${COLIMA_MIN_MEMORY_GIB}GiB. Resize it with: ${resize}"
+  fi
+
+  colima_cpus="$(colima list 2>/dev/null | awk '$1 == "default" {print $4}')"
+  if [ -n "$colima_cpus" ] && [ "$colima_cpus" -lt "$COLIMA_MIN_CPUS" ]; then
+    fail "Colima has ${colima_cpus} vCPUs; the five amd64 JVMs need at least ${COLIMA_MIN_CPUS} or TLS/OCSP handshakes time out. Resize it with: ${resize}"
+  fi
+}
+
 ensure_docker_daemon() {
-  docker info >/dev/null 2>&1 && return
+  if docker info >/dev/null 2>&1; then
+    if [ "$(uname -s)" = "Darwin" ] && command -v colima >/dev/null 2>&1; then
+      case "${DOCKER_HOST:-$(docker context show 2>/dev/null || true)}" in
+        *colima*) ensure_colima_resources ;;
+      esac
+    fi
+    return
+  fi
 
   if [ "$(uname -s)" = "Darwin" ] && command -v colima >/dev/null 2>&1; then
     log "Docker daemon not reachable; trying Colima"
-    colima status >/dev/null 2>&1 || colima start
+    if ! colima status >/dev/null 2>&1; then
+      colima start --vm-type vz --vz-rosetta --memory "$COLIMA_MIN_MEMORY_GIB" --cpu 4
+    fi
+    ensure_colima_resources
     export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
     docker info >/dev/null 2>&1 && return
   fi
