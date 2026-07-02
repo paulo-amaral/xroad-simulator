@@ -15,10 +15,27 @@ fail() { printf '\033[1;31m[install] ERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 require() { command -v "$1" >/dev/null 2>&1 || fail "missing dependency: $1"; }
 
+ensure_docker_daemon() {
+  docker info >/dev/null 2>&1 && return
+
+  if [ "$(uname -s)" = "Darwin" ] && command -v colima >/dev/null 2>&1; then
+    log "Docker daemon not reachable; trying Colima"
+    colima status >/dev/null 2>&1 || colima start
+    export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+    docker info >/dev/null 2>&1 && return
+  fi
+
+  if [ "$(uname -s)" = "Linux" ]; then
+    fail "Docker daemon is not running. Start it with: sudo systemctl start docker"
+  fi
+
+  fail "Docker daemon is not running. Start Docker Desktop or Colima, then retry"
+}
+
 log "Checking prerequisites"
 require docker
 docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 not available (need 'docker compose')"
-docker info >/dev/null 2>&1 || fail "Docker daemon is not running"
+ensure_docker_daemon
 require python3
 python3 -c "import venv" >/dev/null 2>&1 || fail "python3-venv module is not installed"
 
