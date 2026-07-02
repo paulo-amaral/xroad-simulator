@@ -35,17 +35,17 @@ requests, and render them on GitHub. Update the diagram in the same PR that chan
 Trust-zone rule: only **5500** and **5577** face the external network; information systems live behind
 **8080/8443** on the internal network; the admin UI (**4000**) is local only. Diagrams must keep these zones distinct.
 
-## Template 1 — Inter-ministry call (sequence diagram)
+## Template 1 — Member-to-member call (sequence diagram)
 
-Consumer at Ministry A calls a service at Ministry B. Copy and rename the participants.
+Consumer at Member A calls a service at Member B. Copy and rename the participants.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant ISA as Ministry A IS (consumer)
+    participant ISA as Member A IS (consumer)
     participant SSA as Security Server A
     participant SSB as Security Server B
-    participant ISB as Ministry B IS (provider)
+    participant ISB as Member B IS (provider)
     participant TS as TSA (timestamp)
 
     ISA->>SSA: REST request /r1/{service id}<br/>Header X-Road-Client: A subsystem (8080/8443)
@@ -60,9 +60,9 @@ sequenceDiagram
     SSB->>TS: Timestamp message log (RFC 3161)
 ```
 
-## Template 2 — Federation topology across ministries (deployment graph)
+## Template 2 — Federation topology across members (deployment graph)
 
-Each ministry runs its own Security Server; all trust the same Central Server and trust services.
+Each member runs its own Security Server; all trust the same Central Server and trust services.
 
 ```mermaid
 graph TB
@@ -72,13 +72,13 @@ graph TB
         TSA[Time-Stamping Authority]
     end
 
-    subgraph MinA[Ministry A]
+    subgraph MinA[Member A]
         ISA[Information system] --- SSA[Security Server A]
     end
-    subgraph MinB[Ministry B]
+    subgraph MinB[Member B]
         ISB[Information system] --- SSB[Security Server B]
     end
-    subgraph MinC[Ministry C]
+    subgraph MinC[Member C]
         ISC[Information system] --- SSC[Security Server C]
     end
 

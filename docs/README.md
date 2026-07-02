@@ -15,11 +15,7 @@ General X-Road reference, separated by concern.
 - [observability.md](observability.md) — native + Grafana/Prometheus/Loki monitoring
 - [citizen-portal-ekyc.md](citizen-portal-ekyc.md) — citizen portals, eID/e-KYC vs X-Road
 - [sandbox.md](sandbox.md) — how to stand up an X-Road sandbox (NIIS test images + xrdsst)
-
-## Timor-Leste standards & compliance
-
-- [govtl-compliance.md](govtl-compliance.md) — GovTL technical standards + project compliance matrix
-- [Normas de Referência Técnica GovTL.docx.md](Normas%20de%20Refer%C3%AAncia%20T%C3%A9cnica%20GovTL.docx.md) — source (Portuguese)
+- [technical-standards-compliance.md](technical-standards-compliance.md) — technical standards baseline + project compliance matrix
 
 ## Where the rest lives
 

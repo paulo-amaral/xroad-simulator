@@ -10,7 +10,7 @@ Two different "single authentications" coexist; do not conflate them:
 
 | Layer | Mechanism | Question it answers |
 |---|---|---|
-| System trust (X-Road) | PKI, mTLS, signing certs, ACLs | Is this ministry's system allowed to call this service? |
+| System trust (X-Road) | PKI, mTLS, signing certs, ACLs | Is this member system allowed to call this service? |
 | Citizen identity (portal) | National eID / IdP (OIDC/SAML) + e-KYC | Is this person who they claim, and are they logged in? |
 
 The portal is the bridge: it authenticates the citizen, then makes X-Road calls on the citizen's behalf.
@@ -20,7 +20,7 @@ The portal is the bridge: it authenticates the citizen, then makes X-Road calls 
 The Balcao Unico is the citizen entry point, so it needs **identity proofing and authentication**:
 
 - **e-KYC (enrolment / proofing):** verify the person at registration. Document verification, biometric/liveness
-  check, and validation against authoritative registries (civil registry at the Ministry of Justice, etc.).
+  check, and validation against authoritative registries.
   Answers "is this real person who they claim?" once.
 - **eID / IdP (session authentication):** every login proves the same person returns. Use OpenID Connect or
   SAML against a national eID scheme. Step-up authentication for sensitive operations.
@@ -31,7 +31,7 @@ so the e-KYC process orchestrates calls over X-Road to the authoritative source 
 ## How a citizen request flows
 
 1. Citizen logs in to Balcao Unico via eID/OIDC; e-KYC verified at enrolment.
-2. Portal (subsystem `OSS/PORTAL`) calls a government service through its Security Server (`ss-oss`).
+2. Portal (subsystem `OSS/PORTAL`) calls an X-Road service through its Security Server (`ss-oss`).
 3. The portal **asserts the citizen identity** in the request so the provider can authorize at the person
    level and log it. X-Road carries a conventional message **user id** (historically the SOAP `userId`; for
    REST, a header/claim agreed in the service contract). The citizen's OIDC session token never travels on
@@ -49,14 +49,13 @@ so the e-KYC process orchestrates calls over X-Road to the authoritative source 
 - **Token isolation.** Session/eID tokens stay at the portal boundary; they are not forwarded over X-Road.
 - **Step-up auth** for sensitive services (e.g. changing records vs reading them).
 
-## Deployment notes for the Timor-Leste plan
+## Deployment notes
 
-- **Central Server hosted by the Ministry of Transport and Communications (TIC Timor).** The Central Server is
-  the instance authority (member registry, policy, signed global configuration). It is operationally neutral,
-  hosting it at TIC Timor is an operational choice; it does not give MTC access to other ministries' data,
-  which is still governed by certificates and ACLs.
-- **Each ministry keeps its own database.** This matches X-Road's decentralized model: there is no central
-  data lake. Each ministry's information system owns its data; each Security Server also has its own local
+- **Central Server placement is operational.** The Central Server is the instance authority (member registry,
+  policy, signed global configuration). Hosting it with one operator does not give that operator access to
+  other members' data, which is still governed by certificates and ACLs.
+- **Each member keeps its own database.** This matches X-Road's decentralized model: there is no central
+  data lake. Each member information system owns its data; each Security Server also has its own local
   `serverconf` and `messagelog` databases. Data is exchanged on request, point to point, never pooled.
 
 ## Sandbox representation

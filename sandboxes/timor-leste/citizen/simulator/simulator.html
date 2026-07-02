@@ -129,8 +129,8 @@
 <header>
   <div>
     <h1>X-Road Timor-Leste — Service flow simulator</h1>
-    <p>Sandbox (TL-TEST). The Central Server is operated by MTC / TIC Timor. Citizens enter through the
-       One-Stop-Shop (Balkaun Uniku); each ministry runs its own Security Server and database.</p>
+    <p>Sandbox (TL-TEST). Citizens enter through the One-Stop-Shop (Balkaun Uniku); each member runs its
+       own Security Server and database.</p>
   </div>
   <div class="spacer"></div>
   <div class="links">
@@ -144,11 +144,11 @@
   <div class="modal-card">
     <div class="modal-head">
       <div>
-        <h2>Standards X-Road follows &middot; norms Timor-Leste needs</h2>
-        <p>RFCs, ISO/IEC, ETSI, NIST, EU/eIDAS, OASIS &mdash; grounded in <code>docs/govtl-compliance.md</code>.
+        <h2>Standards X-Road follows</h2>
+        <p>RFCs, ISO/IEC, ETSI, NIST, EU/eIDAS, OASIS.
            <span class="bd native">native</span> X-Road provides &middot;
-           <span class="bd harden">harden</span> TL must enforce &middot;
-           <span class="bd add">add</span> TL must adopt</p>
+           <span class="bd harden">harden</span> deployment hardening &middot;
+           <span class="bd add">add</span> platform addition</p>
       </div>
       <button class="modal-x" id="modalx" aria-label="close">&times;</button>
     </div>
@@ -173,7 +173,7 @@
   <div class="stage">
     <svg id="svg" viewBox="0 0 1200 780" width="1200" height="780" role="img" aria-label="X-Road topology"></svg>
     <div class="role-note">
-      <div><strong>Operator</strong>Runs the X-Road instance services: Central Server governance, management service provider, trust setup, approvals and monitoring. In this sandbox MTC/TIC Timor operates <code>cs</code> and <code>ss-mtc</code> hosts <code>MANAGEMENT</code>.</div>
+      <div><strong>Operator</strong>Runs the X-Road instance services: Central Server governance, management service provider, trust setup, approvals and monitoring. In this sandbox <code>cs</code> runs the Central Server and <code>ss-mtc</code> hosts <code>MANAGEMENT</code>.</div>
       <div><strong>Consumer</strong>Calls a service through its own Security Server. It sends the <code>X-Road-Client</code> identity and must have an ACL grant before the provider accepts the request.</div>
       <div><strong>Provider</strong>Publishes a service behind its Security Server. It owns the real information system/database and decides which consumers get access.</div>
     </div>
@@ -259,19 +259,19 @@ const NODES={
   ssoss:  {x:480,y:386,w:140,h:62,t:"ss-oss",s:"GOV/OSS · PORTAL",cls:"sys",u:"https://localhost:5000",
            role:"Security Server of the One-Stop-Shop (consumer)",ports:["5000 admin","8443 internal","5500/5577 ext"],
            svc:["consumer: PORTAL"]},
-  cs:     {x:560,y:88, w:200,h:64,t:"Central Server",s:"MTC / TIC Timor",cls:"gov",u:"https://localhost:4000",
+  cs:     {x:560,y:88, w:200,h:64,t:"Central Server",s:"operator",cls:"gov",u:"https://localhost:4000",
            role:"Operates TL-TEST: members, trust anchors, signed global configuration, management services",
            ports:["4000 admin","4002 mgmt","80/443 gconf"],svc:["global conf","registration"]},
   ca:     {x:840,y:88, w:170,h:64,t:"Certificate Authority",s:"sandbox CA · OCSP · TSA",cls:"trust",u:"http://localhost:8888/testca/",
            role:"Certificate Authority (sandbox): issues certificates, plus the OCSP responder and time-stamping authority. One component of the X-Road PKI.",
            ports:["8888 CA/OCSP","8899 TSA"],svc:["sign","OCSP","timestamp"]},
   ssmj:   {x:690,y:252,w:140,h:62,t:"ss-mj",s:"GOV/MJ · JUSTICE",cls:"sys",u:"https://localhost:1000",
-           role:"Ministry of Justice Security Server (provider + consumer)",ports:["1000 admin","8443 internal","5500/5577 ext"],
+           role:"Justice provider Security Server (provider + consumer)",ports:["1000 admin","8443 internal","5500/5577 ext"],
            svc:["birth-certificate/v1"]},
   dbmj:   {x:960,y:252,db:1,t:"Justice DB",s:"civil registry",cls:"db",
            role:"Civil registry behind mj-mock (provider information system)",ports:["8080 mj-mock"],svc:["certificates"]},
   ssserve:{x:690,y:402,w:140,h:62,t:"ss-serve",s:"GOV/SERVE · REGISTRY",cls:"sys",u:"https://localhost:2000",
-           role:"SERVE I.P. Security Server (business registry under MCAE; provider of eKYB)",ports:["2000 admin","8443 internal","5500/5577 ext"],
+           role:"Business registry Security Server (provider of eKYB)",ports:["2000 admin","8443 internal","5500/5577 ext"],
            svc:["eKYB"]},
   dbserve:{x:960,y:402,db:1,t:"Business Registry",s:"SERVE I.P. records",cls:"db",
            role:"Business register behind serve-mock (company info, TIN, directors)",ports:["8080 serve-mock"],svc:["eKYB"]},
@@ -299,7 +299,7 @@ const ZONES=[
   {x:460,y:40,w:720,h:700,label:"X-Road · TL-TEST — secure exchange between agencies"},
 ];
 const MINZONES=[
-  {x:650,y:220,w:430,h:118,label:"Ministry of Justice"},
+  {x:650,y:220,w:430,h:118,label:"Justice provider"},
   {x:650,y:370,w:430,h:118,label:"SERVE I.P. — business registry (eKYB)"},
   {x:650,y:544,w:430,h:118,label:"Transport / DNTT — operator"},
 ];
@@ -508,7 +508,7 @@ document.getElementById("step").addEventListener("click",()=>!playing&&doStep())
 document.getElementById("reset").addEventListener("click",()=>cur&&loadScenario(document.querySelector(".scn.on")?.dataset.scn||"birth"));
 updateButtons();
 
-// ── Standards & norms (grounded in docs/govtl-compliance.md) ──────────────────
+// ── Standards & norms ─────────────────────────────────────────────────────────
 const STANDARDS=[
   ["PKI & trust services",[
     ["RFC 5280","X.509 v3 — national PKI / CA structure","native"],

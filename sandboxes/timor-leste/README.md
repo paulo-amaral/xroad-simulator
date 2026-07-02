@@ -1,11 +1,11 @@
 # Timor-Leste X-Road Sandbox
 
-This sandbox simulates ministries joined to a single X-Road instance, exchanging data via APIs under a single PKI trust fabric. The **One-Stop-Shop portal** serves as the citizen entry point (e-KYC / eID).
+This sandbox simulates member organizations joined to a single X-Road instance, exchanging data via APIs under a single PKI trust fabric. The **One-Stop-Shop portal** serves as the citizen entry point (e-KYC / eID).
 
-| Ministry / portal | Member | Subsystem | Role |
+| Sample organization / portal | Member | Subsystem | Role |
 |---|---|---|---|
-| Ministry of Justice | `TL-TEST/GOV/MJ` | `JUSTICE` | provider of `birth-certificate`, consumer |
-| SERVE I.P. (business registry, under MCAE) | `TL-TEST/GOV/SERVE` | `REGISTRY` | provider of `eKYB` (business verification) |
+| Justice provider | `TL-TEST/GOV/MJ` | `JUSTICE` | provider of `birth-certificate`, consumer |
+| Business registry | `TL-TEST/GOV/SERVE` | `REGISTRY` | provider of `eKYB` (business verification) |
 | Transportes e Comunicacoes (DNTT) | `TL-TEST/GOV/MTC` | `DNTT` | provider of `driver-license` |
 | One-Stop-Shop (one-stop-shop) | `TL-TEST/GOV/OSS` | `PORTAL` | consumer on behalf of citizens |
 
@@ -15,7 +15,7 @@ This sandbox simulates ministries joined to a single X-Road instance, exchanging
 
 ## Journey 1: For Administrators (Network Operators)
 
-Administrators (e.g., TIC Timor) are responsible for bringing up the infrastructure, configuring the Central Server, and setting up the Security Servers for the agencies.
+Administrators are responsible for bringing up the infrastructure, configuring the Central Server, and setting up the Security Servers for the members.
 
 ### Automated One-Command Setup
 
@@ -46,19 +46,19 @@ UIs Available:
 
 ## Journey 2: For Implementers (Developers & Agencies)
 
-Implementers are the developers building APIs (e.g., Ministry of Justice) or consuming APIs (e.g., One-Stop-Shop). They work with the X-Road ecosystem once it has been provisioned by the Administrator.
+Implementers are the developers building APIs or consuming APIs (e.g., One-Stop-Shop). They work with the X-Road ecosystem once it has been provisioned by the Administrator.
 
 ### 1. Publishing Services & Zero-Trust (ACLs)
-X-Road authenticates **systems**, not end users. A ministry is onboarded once and then reaches any service it is granted.
+X-Road authenticates **systems**, not end users. A member is onboarded once and then reaches any service it is granted.
 
-`xroad/config/xrdsst-config.yaml` shows how DNTT publishes `driver-license` and the Ministry of Justice publishes
-`birth-certificate`, each granted to the One-Stop-Shop portal (and selected ministries). OpenAPI 3.1 contracts
+`xroad/config/xrdsst-config.yaml` shows how DNTT publishes `driver-license` and the justice provider publishes
+`birth-certificate`, each granted to the One-Stop-Shop portal and selected consumers. OpenAPI 3.1 contracts
 for both services are in `xroad/api/`. If you change who can access what, re-run the management/service phase:
 ```bash
 tools/scripts/provision-mgmt.sh
 ```
 
-### 2. Consuming Services (Inter-Ministry and via the portal)
+### 2. Consuming Services (member-to-member and via the portal)
 You route the request through **your own** Security Server. Both `birth-certificate` and `driver-license` are
 consumed by the One-Stop-Shop (subsystem `OSS/PORTAL`, through `ss-oss` on port 5443):
 
@@ -184,9 +184,8 @@ sandboxes/timor-leste/
 ## Advanced Topics & Sources
 - **Orchestrator:** `python3 tools/sandboxctl.py up|status|identity|anchor|test|down`.
 - **Observability:** `docker compose -f docker-compose.yml -f observability/docker-compose.observability.yml up -d` (Grafana `:3001`).
-- **Compliance (GovTL):** standards & gap matrix in [govtl-compliance.md](../../docs/govtl-compliance.md).
 - **SBOM / CVE:** `tools/scripts/sbom.sh` (syft + grype); CI runs the same gate plus secret scanning (`.github/workflows/ci.yml`).
 - **Official guide alignment:** built on the NIIS [Local Test Environment with Docker Compose](https://nordic-institute.atlassian.net/wiki/spaces/XRDKB/pages/281739671/) guide and the X-Road 7.8 `Docker/xrd-dev-stack` bootstrap flow. Same credentials (`xrd`/`secret`), PIN (`Sandbox_2026`) and port scheme. The upstream dev stack uses **3** Security Servers; this sandbox uses **4** (`ss-mj`, `ss-serve`, `ss-mtc`, `ss-oss`) plus the Central Server.
-- **Kubernetes:** Deploy the Security Server Sidecar per ministry. See the [Sidecar user guide](https://docs.x-road.global/Sidecar/security_server_sidecar_user_guide.html).
+- **Kubernetes:** Deploy the Security Server Sidecar per member. See the [Sidecar user guide](https://docs.x-road.global/Sidecar/security_server_sidecar_user_guide.html).
 - **Test CA:** `testca` (CA + OCSP + TSA in one container); replace with a real approved CA in production.
 - **Security Server Toolkit:** [xrdsst on GitHub](https://github.com/nordic-institute/X-Road-Security-Server-toolkit)

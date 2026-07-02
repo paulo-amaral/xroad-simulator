@@ -30,12 +30,11 @@ Certificate Authority and TSA before any non-sandbox use.
 4. Optionally run a deeper scan with `gitleaks detect --source .`.
 5. Review the diff for hardcoded credentials or PII.
 
-## National standards (GovTL)
+## Security baseline
 
-Security and interoperability must follow the Timor-Leste GovTL technical standards: TLS 1.3 (ban TLS 1.0/1.1),
-OpenAPI 3.1, OIDC + PKCE, JWT best practices (RFC 8725), X.509/OCSP/timestamping, ISO 27001/27701, OWASP ASVS
-L2, and SBOM in procurement. Compliance matrix and gaps:
-[docs/govtl-compliance.md](docs/govtl-compliance.md).
+Security and interoperability should use TLS 1.3 where available (ban TLS 1.0/1.1), OpenAPI 3.1, OIDC + PKCE,
+JWT best practices (RFC 8725), X.509/OCSP/timestamping, ISO 27001/27701, OWASP ASVS L2, and SBOM checks.
+See [docs/technical-standards-compliance.md](docs/technical-standards-compliance.md).
 
 ## Reporting a vulnerability
 

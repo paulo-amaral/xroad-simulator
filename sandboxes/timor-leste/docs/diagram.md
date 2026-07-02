@@ -15,16 +15,16 @@ graph TB
   end
 
   subgraph XR[X-Road]
-    subgraph Trust[Trust services - MTC / TIC Timor]
+    subgraph Trust[Trust services - operator]
       CS[Central Server<br/>members, policy, global conf]
       CA[Test CA + OCSP :8888]
       TSA[Test TSA :8899]
     end
     SSO[ss-oss<br/>GOV/OSS]
-    subgraph MJ[Ministry of Justice]
+    subgraph MJ[Justice provider]
       SSJ[ss-mj<br/>GOV/MJ · birth-certificate] --- DBJ[(Justice DB)]
     end
-    subgraph SERVE[SERVE I.P. under MCAE]
+    subgraph SERVE[Business registry]
       SSH[ss-serve<br/>GOV/SERVE · REGISTRY] --- DBH[(Business Registry)]
     end
     subgraph MTC[Transport - DNTT]
@@ -129,7 +129,7 @@ sequenceDiagram
     SSP->>TSA: batch timestamp (RFC 3161, async)
 ```
 
-## Inter-ministry (system-to-system, no portal)
+## Member-to-member (system-to-system, no portal)
 
 ```mermaid
 sequenceDiagram

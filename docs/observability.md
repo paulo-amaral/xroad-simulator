@@ -17,7 +17,7 @@ platform already exposes.
 ## Recommended stack (Grafana-centred)
 
 - **Metrics:** Prometheus, scraping `node-exporter` (host), `cAdvisor` (containers), `postgres-exporter`
-  (each ministry DB plus `serverconf`/`messagelog`), and a `jmx_exporter` sidecar on each Security Server
+  (each member DB plus `serverconf`/`messagelog`), and a `jmx_exporter` sidecar on each Security Server
   (X-Road components use Dropwizard Metrics over JMX).
 - **Dashboards:** Grafana.
 - **Logs:** Loki + Promtail (or EFK/ELK with Filebeat). Ship `/var/log/xroad/*` and the audit log.
@@ -53,7 +53,7 @@ docker compose -f docker-compose.yml -f observability/docker-compose.observabili
 ```
 
 JMX and postgres exporters are included as commented targets; enable them once the Security Servers expose JMX
-and you point the exporter at each ministry database.
+and you point the exporter at each member database.
 
 ## Sources
 

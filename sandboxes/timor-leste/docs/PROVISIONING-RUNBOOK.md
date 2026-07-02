@@ -52,7 +52,7 @@ The roles needed: `XROAD_SYSTEM_ADMINISTRATOR`, `XROAD_REGISTRATION_OFFICER`,
 Registering any subsystem is **itself an X-Road call** to the management service
 (`GOV/01/MANAGEMENT/clientReg`). Until a Security Server hosts that provider, every client
 stays `SAVED` and you get `UnknownMember: Could not find addresses for service provider
-SERVICE:.../MANAGEMENT/clientReg`. We host it on **ss-mtc** (the operator, MTC / TIC Timor).
+SERVICE:.../MANAGEMENT/clientReg`. We host it on **ss-mtc** (the operator member).
 
 1. **Pre-register the provider's Security Server** (Central Server). The provider
    `GOV:01:MANAGEMENT` is already appointed; the missing piece is `security_server_id`:

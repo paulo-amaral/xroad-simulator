@@ -1,8 +1,6 @@
-# GovTL Technical Standards — English reference & project compliance
+# Technical standards baseline & project compliance
 
-English rendering of the Timor-Leste *Normas, Protocolos e Standards para o Governo Digital* (v1.0, June 2026),
-plus a compliance matrix mapping each mandatory norm to this X-Road project. Source (Portuguese):
-[Normas de Referência Técnica GovTL.docx.md](./Normas%20de%20Refer%C3%AAncia%20T%C3%A9cnica%20GovTL.docx.md).
+Technical standards baseline plus a compliance matrix mapping each norm to this X-Road project.
 
 Priority categories: **Mandatory** (law must require it), **Recommended** (consolidated best practice),
 **Reference** (model that guides the legislator), **Emerging** (anticipate and plan for adoption).
@@ -11,8 +9,8 @@ Priority categories: **Mandatory** (law must require it), **Recommended** (conso
 
 | Area | Norm | Why it matters here |
 |---|---|---|
-| Interop | OpenAPI 3.1 (OAS) | API contracts for every government service |
-| Interop | mTLS (RFC 8705) | Bidirectional auth between government systems |
+| Interop | OpenAPI 3.1 (OAS) | API contracts for every member service |
+| Interop | mTLS (RFC 8705) | Bidirectional auth between member systems |
 | Interop | ISO 8601 / 4217 / 3166, UTF-8 / Unicode 15 | Dates, currencies, country codes; Tetum + Portuguese support |
 | Interop | ISO/IEC 19941 | Cloud portability, anti lock-in |
 | Identity | NIST SP 800-63-4 (IAL/AAL) | Assurance levels per citizen transaction |
@@ -67,7 +65,7 @@ Legend: met · partial / sandbox-only · gap (action needed).
 | Syslog (RFC 5424) audit | partial | Observability overlay ships logs (Loki); add syslog/audit-log forwarding for the real audit trail. |
 | SBOM (procurement) | gap | Add an SBOM step (e.g. `syft`/`cyclonedx`) in CI before release. |
 | Open source / open standards (anti lock-in) | met | X-Road, Docker, Postgres, nginx, Python stdlib; open formats throughout. |
-| DNSSEC, post-quantum planning | gap (emerging) | Out of sandbox scope; plan for the `.tl` zone and PQC (FIPS 203/204/205) roadmap. |
+| DNSSEC, post-quantum planning | gap (emerging) | Out of sandbox scope; plan DNSSEC and PQC (FIPS 203/204/205) roadmaps. |
 
 ## Recommended next actions (priority order)
 
@@ -79,5 +77,4 @@ Legend: met · partial / sandbox-only · gap (action needed).
 
 ## Sources
 
-- GovTL standards (Portuguese source): same directory.
 - X-Road security architecture: <https://github.com/nordic-institute/X-Road/blob/develop/doc/Architecture/arc-sec_x_road_security_architecture.md>

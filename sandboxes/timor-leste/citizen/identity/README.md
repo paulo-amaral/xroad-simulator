@@ -33,7 +33,7 @@ in `eid-config.json` to model other citizens or assurance levels.
 
 1. Citizen logs in via `eid-mock` (OIDC authorization-code flow); the portal validates the ID token.
 2. Portal calls `ekyc-mock` `/verify` to confirm identity proofing (in production: document + biometric/liveness).
-3. Only then does the portal call government services over X-Road (`ss-oss`), e.g. birth-certificate or
+3. Only then does the portal call member services over X-Road (`ss-oss`), e.g. birth-certificate or
    driver-license, with the citizen user id asserted and a matching ACL on the provider.
 
 ## Quick checks

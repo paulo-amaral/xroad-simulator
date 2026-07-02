@@ -4,7 +4,7 @@ These three are different things. Mixing them up is the most common X-Road onboa
 
 | Concept | What it is | Identifier | Where in the Central Server |
 |---|---|---|---|
-| **Member** | An organization that joins X-Road (a ministry, agency, company) | `INSTANCE/CLASS/CODE` e.g. `TL-TEST/GOV/MJ` | Members / Clients |
+| **Member** | An organization that joins X-Road (agency, company, operator) | `INSTANCE/CLASS/CODE` e.g. `TL-TEST/GOV/MJ` | Members / Clients |
 | **Subsystem** | A logical group of services **inside** a member. It consumes/provides services and holds ACLs. | `…/CLASS/CODE/SUBSYSTEM` e.g. `TL-TEST/GOV/MJ/JUSTICE` | Member → Subsystems tab |
 | **Security Server** | The gateway machine that hosts clients and routes signed messages over mTLS. Has an owner member + a server code. | `INSTANCE/CLASS/CODE/SERVER_CODE` e.g. `TL-TEST/GOV/MJ/ss-mj` | Security Servers menu |
 
@@ -14,7 +14,7 @@ These three are different things. Mixing them up is the most common X-Road onboa
 
 ```mermaid
 graph TB
-  subgraph M[Member — GOV/MJ Ministry of Justice]
+  subgraph M[Member — GOV/MJ sample provider]
     SUB1[Subsystem JUSTICE<br/>provides birth-certificate]
     SUB2[Subsystem ...]
   end
@@ -47,23 +47,23 @@ graph TB
 | `UNREGISTERED` | Exists logically (e.g. a subsystem) but not registered on any Security Server |
 | `REGISTERED` | Active in the global configuration; usable |
 
-## In the Timor-Leste sandbox
+## In this sandbox
 
 - Members: `GOV/MJ`, `GOV/MOH`, `GOV/MTC`, `GOV/OSS` (plus `GOV/01` for the management service).
-- Security Servers: `ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss` (each owned by its ministry member).
+- Security Servers: `ss-mj`, `ss-moh`, `ss-mtc`, `ss-oss` (each owned by its member).
 - Subsystems: `JUSTICE`, `HEALTH`, `DNTT`, `PORTAL`, `MANAGEMENT`.
 
 ### Full sandbox map (members, Security Servers, subsystems, who consumes what)
 
 ```mermaid
 graph TB
-  subgraph GOVT[Member GOV/01 — Government]
+  subgraph GOVT[Member GOV/01 — Operator]
     MGMT[MANAGEMENT<br/>management service provider]
   end
-  subgraph MJ[Member GOV/MJ — Ministry of Justice]
+  subgraph MJ[Member GOV/MJ — Justice provider]
     SMJ[ss-mj] --- JUSTICE[JUSTICE<br/>provides birth-certificate/v1]
   end
-  subgraph MOH[Member GOV/MOH — Ministry of Health]
+  subgraph MOH[Member GOV/MOH — Health consumer]
     SMOH[ss-moh] --- HEALTH[HEALTH]
   end
   subgraph MTC[Member GOV/MTC — Transport / DNTT]

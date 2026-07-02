@@ -11,6 +11,9 @@ and provider services built test-first against it.
 Development follows the guides in [docs/](docs/README.md): a mandatory pre-flight gate, test-driven
 development, zero-trust controls, and the official X-Road stack.
 
+Originally developed for the Government of Timor-Leste; this repository keeps the implementation as a
+technical X-Road sandbox reference.
+
 > All container images and credentials referenced here are for **test and development only**. They must never
 > be used in production, and their default PINs, passwords, and test CA must never reach a real instance.
 
@@ -25,10 +28,10 @@ xroad-simulator/
 ├── scripts/                      Repository checks
 ├── .github/workflows/ci.yml      Validate, secret scan, SBOM + CVE gate
 │
-├── docs/                         X-ROAD GENERAL reference + GovTL standards (not project-specific)
+├── docs/                         X-ROAD GENERAL reference (not project-specific)
 │   ├── architecture.md, stack.md, zero-trust.md, tdd.md, diagrams.md, sandbox.md,
 │   ├── publish-rest-api.md, federation.md, observability.md, citizen-portal-ekyc.md
-│   └── govtl-compliance.md (+ GovTL source)
+│   └── technical-standards-compliance.md
 │
 ├── infra/                        INFRA — Terraform + Ansible install simulation across distros
 │
@@ -69,11 +72,11 @@ Detail and how to verify each control in tests:
 
 ## Central Server vs Security Server roles
 
-The **Central Server (CS)** is the instance authority. It does not proxy citizen or ministry API traffic. Its
+The **Central Server (CS)** is the instance authority. It does not proxy citizen or member API traffic. Its
 job is governance: member registry, member classes, security server registry, trust services, management
 requests, and signed global configuration. Security Servers download and verify that signed configuration.
 
-A **Security Server (SS)** is the gateway that actually exchanges messages. Every ministry, portal, or agency
+A **Security Server (SS)** is the gateway that actually exchanges messages. Every member, portal, or agency
 information system connects through its own SS. The official installation guide also names special SS roles:
 
 | Name in X-Road docs | What it means | Difference from the Central Server |
@@ -163,7 +166,7 @@ the internal network; the admin UI (4000) is local only. Full table:
 
 ## Integration diagrams
 
-Inter-ministry integrations are documented as versioned Mermaid diagrams (call sequence and federation
+Member-to-member integrations are documented as versioned Mermaid diagrams (call sequence and federation
 topology), kept next to the `xrdsst` configuration and updated in the same change. Ready-to-copy templates,
 the protocol selection table, and the port map are in
 [diagrams.md](docs/diagrams.md). Architecture and market best practices:
@@ -180,12 +183,12 @@ cd infra/terraform && terraform init && terraform apply
 cd ../ansible && ansible-playbook -i inventory.ini site.yml
 ```
 
-## Worked example: Timor-Leste (three ministries + One-Stop-Shop)
+## Worked example: Timor-Leste (sample agencies + One-Stop-Shop)
 
-[sandboxes/timor-leste/](sandboxes/timor-leste/README.md) joins the Ministry of Justice, the Ministry of Health,
-and Transport/DNTT, plus a One-Stop-Shop portal, to one `TL-TEST` instance. Justice publishes a
-birth-certificate service and Transport/DNTT publishes a driver-license service; the One-Stop-Shop consumes
-both on the citizen's behalf, while Health is a consumer. It includes a full Docker Compose ecosystem
+[sandboxes/timor-leste/](sandboxes/timor-leste/README.md) joins sample provider and consumer agencies,
+plus a One-Stop-Shop portal, to one `TL-TEST` instance. One provider publishes a birth-certificate service
+and another publishes a driver-license service; the One-Stop-Shop consumes both on the citizen's behalf,
+while Health is a consumer. It includes a full Docker Compose ecosystem
 (Central Server, Test CA, four Security Servers — one per member — provider mocks, eID/e-KYC, and the portal),
 an `xrdsst` provisioning config, federation/sequence diagrams, and a walkthrough that shows how to sign
 certificates with the sandbox Test CA when you have no Certificate Authority of your own.
